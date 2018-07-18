@@ -85,6 +85,7 @@ typedef enum
 -(void)StatusChanged_GP:(int)nStatus;       //返回 wifi模块上的按键等数据
 -(void)ReceiveImg:(UIImage *)image;         // 如果 实现这个代理，SDK内部不显示图像，而有APP上层来显示接受到的图像帧
 -(void)GetWifiData:(NSData *)data;          //返回 wifi模块从飞控读取的状态数据
+-(void)SnapPhotoCompelete:(BOOL)bSaveOK;    //拍照 返回
 -(void)GetErrorFrame:(uint64_t)nErrorFrame;     // 保留
 -(void)GetFrameCount:(uint64_t)nCount;    //保留
 @end
@@ -116,10 +117,13 @@ typedef enum
 -(void)naSetCustomer:(NSString *)sCustomer;       //设定 客户 只针对 国科模块， “sima” 表示 客户是司马 ，目前只有这一个设定
 -(int)naDeleteSDFile:(NSString *)sFullPath;    //删除 SD 卡上的文件 （只针对 国科模块）
 
+-(void)naSetWifiPassword:(char *)spassword;    //修改wifi密码，只针对 凌通某些模块，需要配合固件
+
 
 -(int)naGetFiles:(TYPE_FILES)ntype;     //获取 SD 卡文件列表 只针对 国科模块
 -(int)naDownloadFile:(NSString *)sPath   Sucess:(Sucess)sucess  Progress:(Progress)Progress  Fail:(Fail)Fail; //开始下载 SD 上的 文件  只针对 国科模块
 -(void)naCancelDownload;     //取消下载
+
 
 -(int)naGetThumb:(NSString *)filename  Sucess:(Thumb_Sucess)sucess;    //获取SD 卡上 视频 文件的 缩率图  只针对 国科模块
 -(void)naCancelGetThumb;   //取消 获取
@@ -157,5 +161,6 @@ typedef enum
 -(int)naStopRemoteRec;
 -(int)naPlay:(NSString *)sPath  ImageView:(JH_OpenGLView *)imgview;
 -(BOOL)naPause;
+-(BOOL)naIsValidType;
 
 @end

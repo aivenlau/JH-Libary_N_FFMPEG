@@ -340,22 +340,7 @@ enum TextureType
     glBindRenderbuffer(GL_RENDERBUFFER, _renderBuffer);
     __block BOOL bOK=YES;
     
-#if 0
-    __weak JH_OpenGLView *weakself = self;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (![weakself.glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer])
-        {
-            NSLog(@"attach渲染缓冲区失败");
-        }
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self->_renderBuffer);
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            NSLog(@"创建缓冲区错误 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
-            bOK = NO;
-            //return NO;
-        }
-    });
-#else
+
     if (![_glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer])
     {
         NSLog(@"attach渲染缓冲区失败");
@@ -366,7 +351,7 @@ enum TextureType
         NSLog(@"创建缓冲区错误 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
         return NO;
     }
-#endif
+
     
     return bOK;
 }
@@ -482,21 +467,19 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
     GLuint vertexShader = [self compileShader:VSH withType:GL_VERTEX_SHADER];
     GLuint fragmentShader = [self compileShader:FSH withType:GL_FRAGMENT_SHADER];
 
-    
-    
-	/** 
+	/**
 	 2
 	 */
     _program = glCreateProgram();
     glAttachShader(_program, vertexShader);
     glAttachShader(_program, fragmentShader);
-    
-	/** 
+
+
+	/**
 	 绑定需要在link之前
 	 */
     glBindAttribLocation(_program, ATTRIB_VERTEX, "position");
     glBindAttribLocation(_program, ATTRIB_TEXTURE, "TexCoordIn");
-    
     glLinkProgram(_program);
     
 	/** 
@@ -588,30 +571,20 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
         if(data == NULL)
         {
             GLenum err = glGetError();
-            if (err != GL_NO_ERROR)
+            if(err != GL_NO_ERROR)
             {
                 printf("GL_ERROR111222=======>%d\n", err);
             }
         }
         [EAGLContext setCurrentContext:_glContext];
-        
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXY]);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w, (GLuint)h, GL_RED_EXT, GL_UNSIGNED_BYTE, data);
-        
-        //[self debugGlError];
         
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXU]);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h);
         
-       // [self debugGlError];
-        
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXV]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h * 5 / 4);
-        /*
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self render];
-        });
-         */
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h * 5 / 4);        
         [self render];
     }
     
@@ -646,7 +619,6 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
     
     void *blackData = malloc(width * height * 1.5);
 	if(blackData)
-		//bzero(blackData, width * height * 1.5);
         memset(blackData, 0x0, width * height * 1.5);
     
     [EAGLContext setCurrentContext:_glContext];

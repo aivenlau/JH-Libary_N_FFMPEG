@@ -67,7 +67,9 @@
     AVCodecContext  	*m_codecCtx ;
     AVFrame         	*m_decodedFrame;
     AVFrame             *pFrameYUV;
-
+    
+    AVFrame             *pFrameSnap;
+    
     AVFrame             *frame_a;
     AVFrame             *frame_b;
     
@@ -176,9 +178,12 @@
     H264HwDecoderImpl *h264Decoder;
     
     
+    
+    
+    
 }
 
-
+@property(strong,nonatomic) MyFrame  *my_snapframe;
 @property(assign,nonatomic)  float  nScale;
 @property(assign,nonatomic)   int  nRota;
 
@@ -587,95 +592,288 @@
     
 }
 
+-(BOOL)naIsValidType
+{
+    return [self F_SetOpInfo];
+}
+
+-(BOOL)F_SetOpInfo
+{
+    BOOL success;
+    struct ifaddrs * addrs;
+    const struct ifaddrs * cursor;
+    NSString *sIp=nil;
+    success = (getifaddrs(&addrs) == 0);
+    if (success)
+    {
+        cursor = addrs;
+        while (cursor != NULL)
+        {
+            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
+            {
+                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
+                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
+                {
+                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
+                    break;
+                }
+            }
+            cursor = cursor->ifa_next;
+        }
+        freeifaddrs(addrs);
+    }
+    BOOL re = NO;
+    if(!sIp)
+        return re;
+    
+    self.sSerVerIP=@"192.168.200.1";
+    
+    NSRange range = [sIp rangeOfString:@"192.168.234."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.234.";
+        self.sSerVerIP =@"192.168.234.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.25."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.25.";
+        self.sSerVerIP =@"192.168.25.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.26."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.26.";
+        self.sSerVerIP =@"192.168.26.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.27."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.27.";
+        self.sSerVerIP =@"192.168.27.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.28."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.28.";
+        self.sSerVerIP =@"192.168.28.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.29."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.29.";
+        self.sSerVerIP =@"192.168.29.1";
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.30."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.30.";
+        self.sSerVerIP =@"192.168.30.1";
+        re = YES;
+    }
+    
+    range = [sIp rangeOfString:@"192.168.123."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.123.";
+        self.sSerVerIP =@"192.168.123.1";
+        re = YES;
+    }
+    
+    range = [sIp rangeOfString:@"175.16.10."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"175.16.10.";
+        self.sSerVerIP =@"175.16.10.2";
+        re = YES;
+    }
+    return re;
+    
+}
+-(void)SetIcType:(IC_TYPE)nICType
+{
+    //[self naSetIcType:nICType];
+    self.nIC_Type = nICType;
+    if(nICType == IC_NO)
+    {
+        if(self.hostReach)
+            [self.hostReach stopNotifier];
+        self.hostReach=nil;
+        self.bIsWifi = NO;
+        return;
+    }
+    if(nICType == IC_GK)
+    {
+        self.sWifiIP = @"192.168.234.";
+        self.sSerVerIP =@"192.168.234.1";
+        
+    }
+    else if(nICType == IC_SN)
+    {
+        self.sWifiIP = @"192.168.123.";
+        self.sSerVerIP =@"192.168.123.1";
+    }
+    else if(nICType == IC_GKA)
+    {
+        self.sWifiIP = @"175.16.10.";
+        self.sSerVerIP =@"175.16.10.2";
+    }
+    else if(nICType == IC_GPH264)
+    {
+        self.sWifiIP = @"192.168.27.";
+        self.sSerVerIP =@"192.168.27.1";
+    }
+    else if(nICType == IC_GPRTP)
+    {
+        self.sWifiIP = @"192.168.28.";
+        self.sSerVerIP =@"192.168.28.1";
+    }
+    else if(nICType == IC_GPRTPB)
+    {
+        self.sWifiIP = @"192.168.29.";
+        self.sSerVerIP =@"192.168.29.1";
+    }
+    else if(nICType == IC_GPH264A)
+    {
+        self.sWifiIP = @"192.168.30.";
+        self.sSerVerIP =@"192.168.30.1";
+    }
+    
+}
+
+-(IC_TYPE)F_AdjType:(NSString *)sPat
+{
+    IC_TYPE SetIcType = [self F_GetType_];
+    if(SetIcType == IC_NO)
+        return NO;
+    
+    [self SetIcType:SetIcType];
+    
+    if([sPat hasPrefix:@"rtsp://192.168.25.1"])
+    {
+        self.sWifiIP = @"192.168.25.";
+        self.sSerVerIP =@"192.168.25.1";
+        SetIcType = IC_GPRTSP;
+    }
+    if([sPat hasPrefix:@"rtsp://192.168.26.1"])
+    {
+        self.sWifiIP = @"192.168.26.";
+        self.sSerVerIP =@"192.168.26.1";
+        SetIcType = IC_GPRTSP;
+    }
+    
+    if([sPat hasPrefix:@"http://192.168.25.1"])
+    {
+        self.sWifiIP = @"192.168.25.";
+        self.sSerVerIP =@"192.168.25.1";
+        SetIcType = IC_GP;
+    }
+    if([sPat hasPrefix:@"http://192.168.26.1"])
+    {
+        self.sWifiIP = @"192.168.26.";
+        self.sSerVerIP =@"192.168.26.1";
+        SetIcType = IC_GP;
+    }
+    self.nIC_Type = SetIcType;
+    return  SetIcType;
+}
+
+
 -(int)F_GetType_
 {
-        BOOL success;
-        struct ifaddrs * addrs;
-        const struct ifaddrs * cursor;
-        NSString *sIp=nil;
-        success = (getifaddrs(&addrs) == 0);
-        if (success)
+    BOOL success;
+    struct ifaddrs * addrs;
+    const struct ifaddrs * cursor;
+    NSString *sIp=nil;
+    success = (getifaddrs(&addrs) == 0);
+    if (success)
+    {
+        cursor = addrs;
+        while (cursor != NULL)
         {
-            cursor = addrs;
-            while (cursor != NULL)
+            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
             {
-                if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
+                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
+                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
                 {
-                    NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
-                    if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
-                    {
-                        sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
-                        break;
-                    }
+                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
+                    break;
                 }
-                cursor = cursor->ifa_next;
             }
-            freeifaddrs(addrs);
+            cursor = cursor->ifa_next;
         }
+        freeifaddrs(addrs);
+    }
     
-        /*
-         IC_GK = 0,      //192.168.234.X
-         
-         IC_SN,          //192.168.123.X
-         IC_GKA,             //175.16.10.X
-         IC_GP,          //192.168.25.X
-         IC_GPRTSP,   //192.168.26.X
-         IC_GPH264,   //192.168.27.X
-         IC_GPRTP,    //192.168.28.X
-         IC_GPRTPB,   //192.168.29.X
-         IC_GPH264A,   //192.168.30.X
-         */
-        
-        if(!sIp)
-            return IC_NO;
-        NSRange range = [sIp rangeOfString:@"192.168.234."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GK;
-        }
-        range = [sIp rangeOfString:@"192.168.25."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GP;
-        }
-        range = [sIp rangeOfString:@"192.168.26."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GPRTSP;
-        }
-        range = [sIp rangeOfString:@"192.168.27."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GPH264;
-        }
-        range = [sIp rangeOfString:@"192.168.28."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GPRTP;
-        }
-        range = [sIp rangeOfString:@"192.168.29."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GPRTPB;
-        }
-        range = [sIp rangeOfString:@"192.168.30."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GPH264A;
-        }
+    /*
+     IC_GK = 0,      //192.168.234.X
+     
+     IC_SN,          //192.168.123.X
+     IC_GKA,             //175.16.10.X
+     IC_GP,          //192.168.25.X
+     IC_GPRTSP,   //192.168.26.X
+     IC_GPH264,   //192.168.27.X
+     IC_GPRTP,    //192.168.28.X
+     IC_GPRTPB,   //192.168.29.X
+     IC_GPH264A,   //192.168.30.X
+     */
     
-        range = [sIp rangeOfString:@"192.168.123."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_SN;
-        }
-    
-        range = [sIp rangeOfString:@"175.16.10."];
-        if (range.location !=NSNotFound)
-        {
-            return IC_GKA;
-        }
+    if(!sIp)
         return IC_NO;
+    NSRange range = [sIp rangeOfString:@"192.168.234."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GK;
+    }
+    range = [sIp rangeOfString:@"192.168.25."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GP;
+    }
+    range = [sIp rangeOfString:@"192.168.26."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GPRTSP;
+    }
+    range = [sIp rangeOfString:@"192.168.27."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GPH264;
+    }
+    range = [sIp rangeOfString:@"192.168.28."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GPRTP;
+    }
+    range = [sIp rangeOfString:@"192.168.29."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GPRTPB;
+    }
+    range = [sIp rangeOfString:@"192.168.30."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GPH264A;
+    }
+    
+    range = [sIp rangeOfString:@"192.168.123."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_SN;
+    }
+    
+    range = [sIp rangeOfString:@"175.16.10."];
+    if (range.location !=NSNotFound)
+    {
+        return IC_GKA;
+    }
+    return IC_NO;
 }
 
 -(void)naSetDispViewB:(JH_OpenGLView *)dispView  BackGround:(UIImage *)img
@@ -774,13 +972,13 @@
     }
     
     /*
-    if(self.nIC_Type == IC_GKA)
-    {
-        if(!self.bVaild)
-        {
-            return -100;
-        }
-    }
+     if(self.nIC_Type == IC_GKA)
+     {
+     if(!self.bVaild)
+     {
+     return -100;
+     }
+     }
      */
     
     
@@ -1004,56 +1202,7 @@ static   int   interrupt_cb( void   *para)
  IC_GPRTPB,   //192.168.29.X
  */
 
--(void)SetIcType:(IC_TYPE)nICType
-{
-    //[self naSetIcType:nICType];
-    self.nIC_Type = nICType;
-    if(nICType == IC_NO)
-    {
-        if(self.hostReach)
-            [self.hostReach stopNotifier];
-        self.hostReach=nil;
-        self.bIsWifi = NO;
-        return;
-    }
-    if(nICType == IC_GK)
-    {
-        self.sWifiIP = @"192.168.234.";
-        self.sSerVerIP =@"192.168.234.1";
-        
-    }
-    else if(nICType == IC_SN)
-    {
-        self.sWifiIP = @"192.168.123.";
-        self.sSerVerIP =@"192.168.123.1";
-    }
-    else if(nICType == IC_GKA)
-    {
-        self.sWifiIP = @"175.16.10.";
-        self.sSerVerIP =@"175.16.10.2";
-    }
-    else if(nICType == IC_GPH264)
-    {
-        self.sWifiIP = @"192.168.27.";
-        self.sSerVerIP =@"192.168.27.1";
-    }
-    else if(nICType == IC_GPRTP)
-    {
-        self.sWifiIP = @"192.168.28.";
-        self.sSerVerIP =@"192.168.28.1";
-    }
-    else if(nICType == IC_GPRTPB)
-    {
-        self.sWifiIP = @"192.168.29.";
-        self.sSerVerIP =@"192.168.29.1";
-    }
-    else if(nICType == IC_GPH264A)
-    {
-        self.sWifiIP = @"192.168.30.";
-        self.sSerVerIP =@"192.168.30.1";
-    }
-    
-}
+
 
 -(void)naSetIcType:(IC_TYPE)nICType
 {
@@ -1122,6 +1271,9 @@ static   int   interrupt_cb( void   *para)
         _nScale = 1.0f;
         _nRota = 0;
         _bSetRecordWH = NO;
+        
+        pFrameSnap = NULL;
+        _my_snapframe = [[MyFrame alloc] init];
         
         _bWhite = NO;
         _bGKACmd_UDP = true;
@@ -1252,14 +1404,11 @@ static   int   interrupt_cb( void   *para)
         //   pFrameRGB= NULL;
         img_convert_ctx= NULL;
         img_convert_ctxBmp= NULL;
-      //  m_outsws_ctx = NULL;
+        //  m_outsws_ctx = NULL;
         disp_codec = NULL;
         m_YUV_ctx = NULL;
         m_YUV_ctxHalf = NULL;
-        
         av_log_set_level(AV_LOG_QUIET);
-        
-        
     }
     return self;
 }
@@ -1516,7 +1665,7 @@ static   int   interrupt_cb( void   *para)
         __weak JH_WifiCamera *weakself = self;
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             weakself.bPlaying = YES;
-            [weakself Decoding];
+            [weakself DecordData_ffmpeg];
         });
         //return [self naPlay];
         return 0;
@@ -1625,12 +1774,12 @@ static   int   interrupt_cb( void   *para)
     {
         {
             /*
-            if(self.bTCP || !self.imageView)
-            {
-                ;
-            }
-            else
-            */
+             if(self.bTCP || !self.imageView)
+             {
+             ;
+             }
+             else
+             */
             {
                 m_formatCtx->flags |= AVFMT_FLAG_NOBUFFER;
                 m_formatCtx->probesize =1024*200;
@@ -1655,10 +1804,10 @@ static   int   interrupt_cb( void   *para)
     for(i=0; i<m_formatCtx->nb_streams; i++)
     {
         if(m_formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO)
-        //if(m_formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
+            //if(m_formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
         {
             m_videoStream = i;
-            videoindex=i;            
+            videoindex=i;
             break;
         }
     }
@@ -1927,42 +2076,7 @@ static   int   interrupt_cb( void   *para)
     usleep(1000*10);
 }
 
--(IC_TYPE)F_AdjType:(NSString *)sPat
-{
-    IC_TYPE SetIcType = [self F_GetType_];
-    if(SetIcType == IC_NO)
-        return NO;
-    
-    [self SetIcType:SetIcType];
-    
-    if([sPat hasPrefix:@"rtsp://192.168.25.1"])
-    {
-        self.sWifiIP = @"192.168.25.";
-        self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GPRTSP;
-    }
-    if([sPat hasPrefix:@"rtsp://192.168.26.1"])
-    {
-        self.sWifiIP = @"192.168.26.";
-        self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GPRTSP;
-    }
-    
-    if([sPat hasPrefix:@"http://192.168.25.1"])
-    {
-        self.sWifiIP = @"192.168.25.";
-        self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GP;
-    }
-    if([sPat hasPrefix:@"http://192.168.26.1"])
-    {
-        self.sWifiIP = @"192.168.26.";
-        self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GP;
-    }
-    self.nIC_Type = SetIcType;
-    return  SetIcType;
-}
+
 
 -(BOOL)naInit:(NSString *)sPath
 {
@@ -1975,35 +2089,42 @@ static   int   interrupt_cb( void   *para)
         return NO;
     [self F_AdjType:sPat];
     
-/*
-    [self SetIcType:SetIcType];
-    
-    if([sPat hasPrefix:@"rtsp://192.168.25.1"])
+    if(pFrameSnap !=NULL)
     {
-        self.sWifiIP = @"192.168.25.";
-        self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GPRTSP;
-    }
-    if([sPat hasPrefix:@"rtsp://192.168.26.1"])
-    {
-        self.sWifiIP = @"192.168.26.";
-        self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GPRTSP;
+        av_free(pFrameSnap->data[0]);
+        av_frame_free(&pFrameSnap);
+        pFrameSnap = NULL;
     }
     
-    if([sPat hasPrefix:@"http://192.168.25.1"])
-    {
-        self.sWifiIP = @"192.168.25.";
-        self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GP;
-    }
-    if([sPat hasPrefix:@"http://192.168.26.1"])
-    {
-        self.sWifiIP = @"192.168.26.";
-        self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GP;
-    }
-*/
+    /*
+     [self SetIcType:SetIcType];
+     
+     if([sPat hasPrefix:@"rtsp://192.168.25.1"])
+     {
+     self.sWifiIP = @"192.168.25.";
+     self.sSerVerIP =@"192.168.25.1";
+     SetIcType = IC_GPRTSP;
+     }
+     if([sPat hasPrefix:@"rtsp://192.168.26.1"])
+     {
+     self.sWifiIP = @"192.168.26.";
+     self.sSerVerIP =@"192.168.26.1";
+     SetIcType = IC_GPRTSP;
+     }
+     
+     if([sPat hasPrefix:@"http://192.168.25.1"])
+     {
+     self.sWifiIP = @"192.168.25.";
+     self.sSerVerIP =@"192.168.25.1";
+     SetIcType = IC_GP;
+     }
+     if([sPat hasPrefix:@"http://192.168.26.1"])
+     {
+     self.sWifiIP = @"192.168.26.";
+     self.sSerVerIP =@"192.168.26.1";
+     SetIcType = IC_GP;
+     }
+     */
     
     
     [self F_StartChecknetWrok:[self.sSerVerIP cStringUsingEncoding: NSUTF8StringEncoding]];
@@ -2019,6 +2140,9 @@ static   int   interrupt_cb( void   *para)
     self.nErrorFrame = 0;
     nFrame_Count = 0;
     nStartTime = -1;
+    
+    _nDispWidth = 640;
+    _nDispHeight = 360;
     
     self.bStoped = NO;
     self.bCanCheckLink_GKA = NO;
@@ -2083,7 +2207,7 @@ static   int   interrupt_cb( void   *para)
     if(self.nIC_Type == IC_SN)
     {
         NSLog(@"Init SN....");
-        nFps = 25;
+        nFps = 20;
         mIsFirstPacket = NO;
         [self closeVideoSocket];
         [self closeCommandSocket];
@@ -2195,7 +2319,7 @@ static   int   interrupt_cb( void   *para)
 
 -(void)naRotation:(int)n
 {
- 
+    
     _nRota=n;
     
     if(self.dispView)
@@ -2416,7 +2540,7 @@ static   int   interrupt_cb( void   *para)
     self.bNormalStop=NO;
     __weak JH_WifiCamera *weakself = self;
     dispatch_async(dispatch_get_global_queue(0,0), ^{
-        [weakself Decoding];
+        [weakself DecordData_ffmpeg];
     });
     [self F_SetChekRelink:40]; //4Sec
     if(self.nIC_Type != IC_GPRTSP && self.nIC_Type != IC_GPH264)
@@ -2774,6 +2898,7 @@ static   int   interrupt_cb( void   *para)
     if(!self.bPlaying)
         return -1;
     self.bNeedSave2Photo = YES;
+    [self F_SavePhoto:nil];
     return 0;
 }
 
@@ -3209,12 +3334,12 @@ static   int   interrupt_cb( void   *para)
     self.sPath = str;
     self.imageView = nil;
     
-        _nDispWidth = 640;
-        _nDispHeight = 360;
+    _nDispWidth = 640;
+    _nDispHeight = 360;
     if([self initMedia])
     {
         self.bPlaying = YES;
-        [self Decoding];
+        [self DecordData_ffmpeg];
         UIImage *img = self.imgSNT;
         self.imgSNT = nil;
         return img;
@@ -3224,269 +3349,13 @@ static   int   interrupt_cb( void   *para)
 }
 
 
--(void)Decoding
-{
-    
-    if(self.nIC_Type == IC_SN)
-        return;
-    if(self.nIC_Type == IC_GKA)
-        return;
-    int ret;
-    //bool  bMMisRTP = false;
-    bFindKeyFrame = YES;
-    self.nLost = 0;
-    self.nRelinkCount = 0;
-    
-    int64_t subt;
-    NSTimeInterval t1 = [[NSDate date] timeIntervalSince1970] * 1000;
-    NSTimeInterval t2;
-    
-    AVPacket pkt = {0};
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
-    [self F_SetTimeout:2000];
-    while(self.bPlaying)
-    {
-        
-        if(self.bSetpause)   // && self.imageView)
-        {
-            usleep(1000*10);
-            continue;
-        }
-        [self F_SetTimeout:0];
-        int  nKeyFrame = NO;
-        if(av_read_frame(m_formatCtx, &pkt)>=0)
-        {
-            [self F_SetTimeout:0];
-            
-            ret = -1;
-            
-            if (avcodec_send_packet(m_codecCtx, &pkt) == 0)
-            {
-                if (avcodec_receive_frame(m_codecCtx, m_decodedFrame) != 0) {
-                    ret = -1;
-                } else {
-                    ret = 0;
-                }
-            }
-            else
-            {
-                ret = -1;
-            }
-            
-            /*
-            
-             int frameFinished = 0;
-            ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &frameFinished, &pkt);
-            if(ret<0 || frameFinished == 0)
-            {
-                ret = -1;
-            }
-            else
-            {
-                ret = 0;
-            }
-             */
-            
-            if(ret == 0 )//&& !bFindKeyFrame)
-            {
-                nKeyFrame =m_decodedFrame->key_frame;
-                self.nRelinkTime = 0;
-                if(pkt.stream_index == m_videoStream)
-                {
-                    if(ret == 0)
-                    {
-                        sws_scale(img_convert_ctx,
-                                  (const uint8_t *const *) m_decodedFrame->data,
-                                  m_decodedFrame->linesize, 0,
-                                  m_codecCtx->height,
-                                  pFrameYUV->data, pFrameYUV->linesize);
-                        
-                        int dd = (int)(_nScale*100);
-                        if(dd <=100) //不放大
-                        {
-                            
-                        }
-                        else
-                        {
-                            AVFrame *pFrameYUV_D = av_frame_alloc();
-                            pFrameYUV_D->format = AV_PIX_FMT_YUV420P;
-                            pFrameYUV_D->width = (int)(m_codecCtx->width*_nScale);
-                            pFrameYUV_D->height = (int)(m_codecCtx->height*_nScale);
-                            ret = av_image_alloc(
-                                                 pFrameYUV_D->data, pFrameYUV_D->linesize, pFrameYUV_D->width,
-                                                 pFrameYUV_D->height,
-                                                 AV_PIX_FMT_YUV420P, 4);
-                            I420Scale(pFrameYUV->data[0],pFrameYUV->linesize[0],
-                                      pFrameYUV->data[1],pFrameYUV->linesize[1],
-                                      pFrameYUV->data[2],pFrameYUV->linesize[2],
-                                      pFrameYUV->width,pFrameYUV->height,
-                                      pFrameYUV_D->data[0],pFrameYUV_D->linesize[0],
-                                      pFrameYUV_D->data[1],pFrameYUV_D->linesize[1],
-                                      pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
-                                      pFrameYUV_D->width,pFrameYUV_D->height,
-                                      kFilterLinear);
-                            av_free(pFrameYUV->data[0]);
-                            av_frame_free(&pFrameYUV);
-                            pFrameYUV = av_frame_alloc();
-                            
-                            pFrameYUV->format = AV_PIX_FMT_YUV420P;
-                            pFrameYUV->width = m_codecCtx->width;
-                            pFrameYUV->height =m_codecCtx->height;
-                            ret = av_image_alloc(
-                                                 pFrameYUV->data, pFrameYUV->linesize, pFrameYUV->width,
-                                                 pFrameYUV->height,
-                                                 AV_PIX_FMT_YUV420P, 4);
-                            
-                            int cx =  pFrameYUV_D->width/2;
-                            int cy =  pFrameYUV_D->height/2;
-                            
-                            int lx = cx-(pFrameYUV->width/2);
-                            lx=(lx+1)/2;
-                            lx*=2;
-                            
-                            
-                            int ly = cy-(pFrameYUV->height/2);
-                            ly = (ly+1)/2;
-                            ly*=2;
-                            
-                            Byte *psrc;
-                            Byte *pdes;
-                            
-                            Byte *pSrcStart = pFrameYUV_D->data[0]+ly*pFrameYUV_D->linesize[0]+lx;
-                            pdes =(Byte*) pFrameYUV->data[0];
-                            
-                            for(int yy=0;yy<pFrameYUV->height;yy++)
-                            {
-                                psrc =(Byte*)pSrcStart+yy*pFrameYUV_D->linesize[0];
-                                memcpy(pdes+yy*pFrameYUV->linesize[0],psrc,(size_t)(pFrameYUV->linesize[0]));
-                            }
-                            
-                            
-                            
-                            pSrcStart = pFrameYUV_D->data[1]+ly/2*pFrameYUV_D->linesize[1]+lx/2;
-                            pdes = pFrameYUV->data[1];
-                            
-                            for(int yy=0;yy<pFrameYUV->height/2;yy++)
-                            {
-                                psrc = pSrcStart+yy*pFrameYUV_D->linesize[1];
-                                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[1]);
-                                
-                            }
-                            
-                            pSrcStart = pFrameYUV_D->data[2]+ly/2*pFrameYUV_D->linesize[2]+lx/2;
-                            pdes = pFrameYUV->data[2];
-                            
-                            for(int yy=0;yy<pFrameYUV->height/2;yy++)
-                            {
-                                psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
-                                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
-                            }
-                            av_free(pFrameYUV_D->data[0]);
-                            av_frame_free(&pFrameYUV_D);
-                        }
-                        
-                        
-                        if(self.bFlip)
-                        {
-                            //[self frame_rotate_180:pFrameYUV DesFrame:frame_a];
-                            //av_frame_copy(pFrameYUV, frame_a);
-                            I420Rotate(pFrameYUV->data[0], pFrameYUV->linesize[0],
-                                       pFrameYUV->data[1], pFrameYUV->linesize[1],
-                                       pFrameYUV->data[2], pFrameYUV->linesize[2],
-                                       frame_a->data[0], frame_a->linesize[0],
-                                       frame_a->data[1], frame_a->linesize[1],
-                                       frame_a->data[2], frame_a->linesize[2],
-                                       frame_a->width, frame_a->height,kRotate180);
-                            
-                            
-                            I420Copy(frame_a->data[0], frame_a->linesize[0],
-                                     frame_a->data[1], frame_a->linesize[1],
-                                     frame_a->data[2], frame_a->linesize[2],
-                                     pFrameYUV->data[0], frame_a->linesize[0],
-                                     pFrameYUV->data[1], frame_a->linesize[1],
-                                     pFrameYUV->data[2], frame_a->linesize[2],
-                                     frame_a->width, frame_a->height);
-                        }
-                        
-                        if(self.b3D)
-                        {
-                            if(self.b3DA)
-                            {
-                                sws_scale(img_convert_ctx_half,
-                                          (const uint8_t *const *) pFrameYUV->data,
-                                          pFrameYUV->linesize, 0,
-                                          m_codecCtx->height,
-                                          frame_b->data, frame_b->linesize);
-                                
-                               // frame_link2frame(frame_b,pFrameYUV);
-                                [self frame_link2frame:frame_b DES:pFrameYUV];;
-                                [self SaveVideo];
-                                pFrameYUV->key_frame = nKeyFrame;
-                                [self F_SavePhoto:pFrameYUV];
-                                [self PlatformDisplay:pFrameYUV];
-                            }
-                            else
-                            {
-                                [self SaveVideo];
-                                pFrameYUV->key_frame = nKeyFrame;
-                                [self F_SavePhoto:pFrameYUV];
-                                sws_scale(img_convert_ctx_half,
-                                          (const uint8_t *const *) pFrameYUV->data,
-                                          pFrameYUV->linesize, 0,
-                                          m_codecCtx->height,
-                                          frame_b->data, frame_b->linesize);
-                                
-                                //frame_link2frame(frame_b,pFrameYUV);
-                                [self frame_link2frame:frame_b DES:pFrameYUV];;
-                                [self PlatformDisplay:pFrameYUV];
-                                
-                            }
-                            
-                        }
-                        else
-                        {
-                            [self SaveVideo];
-                            pFrameYUV->key_frame= nKeyFrame;
-                            [self F_SavePhoto:pFrameYUV];
-                            [self PlatformDisplay:pFrameYUV];
-                            
-                        }
-                        if(self.imageView)
-                        {
-                            t2 = [[NSDate date] timeIntervalSince1970] * 1000;
-                            subt = t2-t1;
-                            if(subt<40)
-                            {
-                                subt= 40-subt;
-                                usleep((useconds_t)(subt*1000) );
-                            }
-                            t1 = [[NSDate date] timeIntervalSince1970] * 1000;
-                        }
-                    }
-                }
-                
-            }
-            av_packet_unref(&pkt);
-        }
-    }
-    [self F_SetTimeout:1];
-    if (m_formatCtx!=NULL) {
-        m_formatCtx->interrupt_callback.opaque = NULL;
-        m_formatCtx->interrupt_callback.callback = NULL;
-    }
-    self.bPlaying = NO;
-    self.bNeedRecon = YES;
-    self.nFlag = 3;
-    [self Releaseffmpeg];
-}
 
 -(void)Releaseffmpeg
 {
     //@synchronized (self)
     {
         NSLog(@"Flag = %d",self.nFlag);
+        NSLog(@"Release FFmpeg data!!!!!");
         self.bPlaying = NO;
         bDisping = NO;
         self.bIsWifi = NO;
@@ -3558,14 +3427,14 @@ static   int   interrupt_cb( void   *para)
             img_convert_ctx_half = NULL;
         }
         
-
+        
         /*
-        if(img_convert_ctx_Rec!=NULL)
-        {
-            sws_freeContext(img_convert_ctx_Rec);
-            img_convert_ctx_Rec = NULL;
-        }
-        */
+         if(img_convert_ctx_Rec!=NULL)
+         {
+         sws_freeContext(img_convert_ctx_Rec);
+         img_convert_ctx_Rec = NULL;
+         }
+         */
         
         if(pFrameYUV!=NULL)
         {
@@ -3633,15 +3502,15 @@ static   int   interrupt_cb( void   *para)
     
     if(!_bWhite)
     {
-    memset(des->data[0],16,des->width*des->height);
-    memset(des->data[1],128,des->width*des->height/4);
-    memset(des->data[2],128,des->width*des->height/4);
+        memset(des->data[0],16,des->width*des->height);
+        memset(des->data[1],128,des->width*des->height/4);
+        memset(des->data[2],128,des->width*des->height/4);
     }
     else
     {
-     memset(des->data[0],255,des->width*des->height);
-     memset(des->data[1],128,des->width*des->height/4);
-     memset(des->data[2],128,des->width*des->height/4);
+        memset(des->data[0],255,des->width*des->height);
+        memset(des->data[1],128,des->width*des->height/4);
+        memset(des->data[2],128,des->width*des->height/4);
     }
     
     
@@ -3680,58 +3549,58 @@ static   int   interrupt_cb( void   *para)
 }
 
 /*
--(void)frame_rotate_180:(AVFrame *)src DesFrame:(AVFrame*)des
-{
-    int i= 0;
-    int hw = src->width>>1;
-    int hh = src->height>>1;
-    int pos= src->width * src->height;
-    pos--;
-    Byte *pdes;
-    Byte *pdes1;
-    Byte *psrc;
-    Byte *psrc1;
-    
-    pdes=(Byte *)des->data[0];
-    psrc =(Byte *)(&src->data[0][pos]);
-    for (i = 0; i < src->height; i++)
-    {
-        for (int j = 0; j < src->width; j++) {
-            *(pdes++)=*(psrc--);
-        }
-    }
-    //n = 0;
-    pos = src->width * src->height>>2;
-    pos--;
-    
-    pdes =(Byte *)des->data[1];
-    pdes1 =(Byte *)des->data[2];
-    
-    psrc =(Byte *)(&src->data[1][pos]);
-    psrc1 =(Byte *)(&src->data[2][pos]);
-    for (i = 0; i < hh;i++)
-    {
-        for (int j = 0; j < hw;j++)
-        {
-            *(pdes++)= *(psrc--);
-            *(pdes1++)= *(psrc1--);
-        }
-    }
-    
-    des->linesize[0] = src->width;
-    des->linesize[1] = src->width>>1;
-    des->linesize[2] = src->width>>1;
-    
-    des->width = src->width;
-    des->height = src->height;
-    des->format = src->format;
-    
-    des->pts = src->pts;
-    //des->pkt_pts = src->pkt_pts;
-    des->pkt_dts = src->pkt_dts;
-    des->key_frame = src->key_frame;
-}
-*/
+ -(void)frame_rotate_180:(AVFrame *)src DesFrame:(AVFrame*)des
+ {
+ int i= 0;
+ int hw = src->width>>1;
+ int hh = src->height>>1;
+ int pos= src->width * src->height;
+ pos--;
+ Byte *pdes;
+ Byte *pdes1;
+ Byte *psrc;
+ Byte *psrc1;
+ 
+ pdes=(Byte *)des->data[0];
+ psrc =(Byte *)(&src->data[0][pos]);
+ for (i = 0; i < src->height; i++)
+ {
+ for (int j = 0; j < src->width; j++) {
+ *(pdes++)=*(psrc--);
+ }
+ }
+ //n = 0;
+ pos = src->width * src->height>>2;
+ pos--;
+ 
+ pdes =(Byte *)des->data[1];
+ pdes1 =(Byte *)des->data[2];
+ 
+ psrc =(Byte *)(&src->data[1][pos]);
+ psrc1 =(Byte *)(&src->data[2][pos]);
+ for (i = 0; i < hh;i++)
+ {
+ for (int j = 0; j < hw;j++)
+ {
+ *(pdes++)= *(psrc--);
+ *(pdes1++)= *(psrc1--);
+ }
+ }
+ 
+ des->linesize[0] = src->width;
+ des->linesize[1] = src->width>>1;
+ des->linesize[2] = src->width>>1;
+ 
+ des->width = src->width;
+ des->height = src->height;
+ des->format = src->format;
+ 
+ des->pts = src->pts;
+ //des->pkt_pts = src->pkt_pts;
+ des->pkt_dts = src->pkt_dts;
+ des->key_frame = src->key_frame;
+ }
+ */
 -(UIImage *)YUVtoUIImage:(AVFrame *)myframe1{
     
     int w = myframe1->width;
@@ -3790,14 +3659,6 @@ static   int   interrupt_cb( void   *para)
 
 -(int )GetBmp:(AVFrame *)frame bSave:(BOOL)bSave
 {
-    /*
-    if(self.nIC_Type == IC_GKA)
-    {
-        //if(frame->key_frame == 0)
-        //    return -1;
-    }
-     */
-    
     AVFrame *tmpFrame1 = av_frame_alloc();
     tmpFrame1->width=_nRecordWidth;
     tmpFrame1->height=_nRecordHeight;
@@ -3832,14 +3693,29 @@ static   int   interrupt_cb( void   *para)
                 {
                     if( [UIImagePNGRepresentation(myimage) writeToFile:self.sSavePathPhoto atomically:YES])
                     {
-                        ;
+                        if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+                        {
+                            [self.delegate SnapPhotoCompelete:YES];
+                        }
+                    }
+                    else
+                    {
+                        if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+                        {
+                            [self.delegate SnapPhotoCompelete:NO];
+                        }
                     }
                     self.bSaveCompelete = YES;
+                    
                 }
             }
             else
             {
-                ;
+                self.bSaveCompelete = YES;
+                if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+                {
+                    [self.delegate SnapPhotoCompelete:NO];
+                }
             }
         }
         self.bNeedSave2Photo = NO;
@@ -3899,7 +3775,11 @@ static   int   interrupt_cb( void   *para)
     }
     
     self.bConnectedOK = YES;
-    self.nSdStatus |= Status_Connected;
+    if((self.nSdStatus & Status_Connected) == 0)
+    {
+        self.nSdStatus |= Status_Connected;
+        [self F_SentStatus];
+    }
     if(self.bSNT)
     {
         [self GetBmp:frame bSave:NO];
@@ -3929,7 +3809,7 @@ static   int   interrupt_cb( void   *para)
 }
 
 
--(int)F_SavePhoto:(AVFrame *)frame
+-(int)F_SavePhoto:(AVFrame *)frameA
 {
 #if 0
     if([self.delegate respondsToSelector:@selector(ReceiveImg:)])
@@ -3939,7 +3819,12 @@ static   int   interrupt_cb( void   *para)
 #endif
     if(self.bNeedSave2Photo)
     {
-        [self GetBmp:frame bSave:YES];
+        @synchronized(_my_snapframe)
+        {
+            AVFrame *frame = _my_snapframe->pFrame;
+            if(frame!=NULL)
+                [self GetBmp:frame bSave:YES];
+        }
     }
     return 0;
 }
@@ -3962,6 +3847,7 @@ static   int   interrupt_cb( void   *para)
     {
         return;
     }
+    
     __weak JH_WifiCamera *myself = self;
     __block UIImage *image =imageA;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
@@ -3971,19 +3857,31 @@ static   int   interrupt_cb( void   *para)
              if (!error)
              {
                  myself.bSaveCompelete = YES;
-                 NSLog(@"Wrie Photo OK!");
+                 //NSLog(@"Wrie Photo OK!");
+                 if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+                 {
+                     [self.delegate SnapPhotoCompelete:YES];
+                 }
              }
              else{
-                 NSLog(@"%s: Error  :  %@",
-                       __PRETTY_FUNCTION__, [error localizedDescription]);
+                 //NSLog(@"%s: Error  :  %@",
+                 //      __PRETTY_FUNCTION__, [error localizedDescription]);
                  myself.bSaveCompelete = YES;
+                 if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+                 {
+                     [self.delegate SnapPhotoCompelete:NO];
+                 }
              }
          }
                          failure:^(NSError *error)
          {
-             NSLog(@"%s: Error  :  %@",
-                   __PRETTY_FUNCTION__,  [error localizedDescription]);
+             //NSLog(@"%s: Error  :  %@",
+             //      __PRETTY_FUNCTION__,  [error localizedDescription]);
              myself.bSaveCompelete = YES;
+             if([self.delegate respondsToSelector:@selector(SnapPhotoCompelete:)])
+             {
+                 [self.delegate SnapPhotoCompelete:NO];
+             }
          }];
     });
 }
@@ -4019,10 +3917,10 @@ uint8_t MP4AdtsFindSamplingRateIndex(uint32_t samplingRate)
     return NUM_ADTS_SAMPLING_RATES - 1;
 }
 bool MP4AacGetConfiguration(uint8_t** ppConfig,
-                                            uint32_t* pConfigLength,
-                                            uint8_t profile,
-                                            uint32_t samplingRate,
-                                            uint8_t channels)
+                            uint32_t* pConfigLength,
+                            uint8_t profile,
+                            uint32_t samplingRate,
+                            uint8_t channels)
 {
     /* create the appropriate decoder config */
     
@@ -4069,34 +3967,34 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
     
     //set USB AUDIO device as high priority: iRig mic HD
     /*
-    for (AVAudioSessionPortDescription *inputPort in [_session availableInputs])
-    {
-        if([inputPort.portType isEqualToString:AVAudioSessionPortUSBAudio])
-        {
-            [_session setPreferredInput:inputPort error:&error];
-            [_session setPreferredInputNumberOfChannels:1 error:&error];
-            break;
-        }
-    }
+     for (AVAudioSessionPortDescription *inputPort in [_session availableInputs])
+     {
+     if([inputPort.portType isEqualToString:AVAudioSessionPortUSBAudio])
+     {
+     [_session setPreferredInput:inputPort error:&error];
+     [_session setPreferredInputNumberOfChannels:1 error:&error];
+     break;
+     }
+     }
      */
     
     success = [_session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error];
     
     /*
-    if(!success)
-        NSLog(@"AVAudioSession error setCategory = %@",error.debugDescription);
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
-    //Restrore default audio output to BuildinReceiver
-    AVAudioSessionRouteDescription *currentRoute = [[AVAudioSession sharedInstance] currentRoute];
-    for (AVAudioSessionPortDescription *portDesc in [currentRoute outputs])
-    {
-        if([portDesc.portType isEqualToString:AVAudioSessionPortBuiltInReceiver])
-        {
-            [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
-            break;
-        }
-    }
-    */
+     if(!success)
+     NSLog(@"AVAudioSession error setCategory = %@",error.debugDescription);
+     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
+     //Restrore default audio output to BuildinReceiver
+     AVAudioSessionRouteDescription *currentRoute = [[AVAudioSession sharedInstance] currentRoute];
+     for (AVAudioSessionPortDescription *portDesc in [currentRoute outputs])
+     {
+     if([portDesc.portType isEqualToString:AVAudioSessionPortBuiltInReceiver])
+     {
+     [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
+     break;
+     }
+     }
+     */
     success = [_session setActive:YES error:&error];
     
 }
@@ -4130,7 +4028,7 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
     AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
     NSError *error = nil;
     
-
+    
     AVCaptureDeviceInput *audioInput = [[AVCaptureDeviceInput alloc]initWithDevice:audioDevice error:&error];
     
     if (error) {
@@ -4143,9 +4041,9 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
     
     self.AudioQueue = dispatch_queue_create("Audio Capture Queue", DISPATCH_QUEUE_SERIAL);
     if(!self.audioOutput)
-    self.audioOutput = [AVCaptureAudioDataOutput new];
+        self.audioOutput = [AVCaptureAudioDataOutput new];
     
-        [self.audioOutput setSampleBufferDelegate:self queue:self.AudioQueue];
+    [self.audioOutput setSampleBufferDelegate:self queue:self.AudioQueue];
     
     if ([self.session canAddOutput:self.audioOutput])
     {
@@ -4159,8 +4057,8 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
 {
     if(bStart)
     {
-            [self setupAudioCapture];
-            [self.liveRecorder startAudioUnitRecorder];
+        [self setupAudioCapture];
+        [self.liveRecorder startAudioUnitRecorder];
     }
     else
     {
@@ -4185,21 +4083,21 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
 }
 
 /*
-- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
-    if (connection == _audioConnection)
-    {
-        // 音频
-        __weak JH_WifiCamera *weakself =self;
-        [self.aacEncoder encodeSampleBuffer:sampleBuffer completionBlock:^(NSData *encodedData, NSError *error) {
-            if (encodedData)
-            {
-                [weakself writeAudio:encodedData];
-            }else {
-                NSLog(@"Error encoding AAC: %@", error);
-            }
-        }];
-    }
-}
+ - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
+ if (connection == _audioConnection)
+ {
+ // 音频
+ __weak JH_WifiCamera *weakself =self;
+ [self.aacEncoder encodeSampleBuffer:sampleBuffer completionBlock:^(NSData *encodedData, NSError *error) {
+ if (encodedData)
+ {
+ [weakself writeAudio:encodedData];
+ }else {
+ NSLog(@"Error encoding AAC: %@", error);
+ }
+ }];
+ }
+ }
  */
 
 
@@ -4412,26 +4310,26 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 }
 
 /*
-- (void)encodeFrame:(CMSampleBufferRef )sampleBuffer
-{
-    
-    CVImageBufferRef imageBuffer = (CVImageBufferRef)CMSampleBufferGetImageBuffer(sampleBuffer);
-    // pts,必须设置，否则会导致编码出来的数据非常大，原因未知
-    CMTime pts = CMTimeMake(_frameCount, nFps);
-    CMTime duration = kCMTimeInvalid;
-    _frameCount++;
-    VTEncodeInfoFlags flags;
-    // 送入编码器编码
-    OSStatus statusCode = VTCompressionSessionEncodeFrame(_encodeSesion,
-                                                          imageBuffer,
-                                                          pts, duration,
-                                                          NULL, NULL, &flags);
-    if (statusCode != noErr)
-    {
-        NSLog(@"H264: VTCompressionSessionEncodeFrame failed with %d", (int)statusCode);
-        return;
-    }
-}
+ - (void)encodeFrame:(CMSampleBufferRef )sampleBuffer
+ {
+ 
+ CVImageBufferRef imageBuffer = (CVImageBufferRef)CMSampleBufferGetImageBuffer(sampleBuffer);
+ // pts,必须设置，否则会导致编码出来的数据非常大，原因未知
+ CMTime pts = CMTimeMake(_frameCount, nFps);
+ CMTime duration = kCMTimeInvalid;
+ _frameCount++;
+ VTEncodeInfoFlags flags;
+ // 送入编码器编码
+ OSStatus statusCode = VTCompressionSessionEncodeFrame(_encodeSesion,
+ imageBuffer,
+ pts, duration,
+ NULL, NULL, &flags);
+ if (statusCode != noErr)
+ {
+ NSLog(@"H264: VTCompressionSessionEncodeFrame failed with %d", (int)statusCode);
+ return;
+ }
+ }
  */
 
 -(int64_t)naGetRecordTime
@@ -4533,6 +4431,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             }
             if(pFrame==NULL)
             {
+
                 T1 = av_gettime()/1000;
                 usleep(1000*10);
                 continue;
@@ -4560,18 +4459,16 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                          mFrame->pFrame->data[2], mFrame->pFrame->linesize[2],
                          mFrame->pFrame->width, mFrame->pFrame->height);
             }
-        
+            
+            
+            if(videoFrames.count>1)
             {
-                //MyFrameX = videoFrames[0];
-                //AVFrame *pFrameA = MyFrameX->pFrame;
-                if(videoFrames.count>1)
-                {
-                    [videoFrames removeObjectAtIndex:0];
-                    av_free(pFrame->data[0]);
-                    av_frame_unref(pFrame);
-                    av_frame_free(&pFrame);
-                }
+                [videoFrames removeObjectAtIndex:0];
+                av_free(pFrame->data[0]);
+                av_frame_unref(pFrame);
+                av_frame_free(&pFrame);
             }
+            
         }
         
         pFrame =mFrame->pFrame;
@@ -4583,14 +4480,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         if(tt>0)
         {
             usleep(tt*1000);
-            /*
-            do {
-                usleep(500);
-                T2 =av_gettime()/1000;
-            }while ((int)(T2-T1)<delay);
-             */
         }
-        //NSLog(@"delay T1 = %ld",(long)(av_gettime()/1000 - T1));
         T1 = av_gettime()/1000;
     }
     
@@ -4616,7 +4506,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         CVPixelBufferRelease(pixelBuffer);
         pixelBuffer = NULL;
-    }    
+    }
     usleep(1000*10);
     MP4Close(fileHandle,0);
     fileHandle = MP4_INVALID_FILE_HANDLE;
@@ -4624,7 +4514,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     audio_trkid=MP4_INVALID_TRACK_ID;
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSError *error;
-    if(self.sSavePath)
+    if(self.sSavePath) //储存在 沙盒中
     {
         if([fileManager moveItemAtPath:m_VideoPath toPath:self.sSavePath error:&error])
         {
@@ -4633,7 +4523,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         self.sSavePath = nil;
         return 0;
     }
-    
+    //如果不储存在沙盒中，就移到系统相册中去
     NSString *path = [m_VideoPath stringByDeletingPathExtension];
     if([fileManager moveItemAtPath:m_VideoPath toPath:path error:&error])
     {
@@ -4642,24 +4532,24 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         {
             dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC);
             dispatch_after(popTime, dispatch_get_global_queue(0, 0), ^(void)
-            {
-                ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-                [library saveVideo:[NSURL fileURLWithPath:path] toAlbum:weakself.sAlbumName completion:^(NSURL *assetURL, NSError *error){
-                    if (!error)
-                    {
-                        NSFileManager *defaultManager;
-                        defaultManager = [NSFileManager defaultManager];
-                        [defaultManager removeItemAtPath:path error:nil];
-                    }
-                    else{
-                        NSLog(@"video Library Error1");
-                    }
-                }
-                           failure:^(NSError *error)
-                 {
-                     NSLog(@"video Library Error2");
-                 }];
-            });
+                           {
+                               ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+                               [library saveVideo:[NSURL fileURLWithPath:path] toAlbum:weakself.sAlbumName completion:^(NSURL *assetURL, NSError *error){
+                                   if (!error)
+                                   {
+                                       NSFileManager *defaultManager;
+                                       defaultManager = [NSFileManager defaultManager];
+                                       [defaultManager removeItemAtPath:path error:nil];
+                                   }
+                                   else{
+                                       NSLog(@"video Library Error1");
+                                   }
+                               }
+                                          failure:^(NSError *error)
+                                {
+                                    NSLog(@"video Library Error2");
+                                }];
+                           });
         }
     }
     else
@@ -4672,29 +4562,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     return 0;
 }
 
--(void)CloseVideo
-{
-    if(m_outFmt!=NULL)
-    {
-        av_write_trailer(m_outCtx);
-        if (!(m_outCtx->oformat->flags & AVFMT_NOFILE) && m_outCtx->pb)
-            avio_close(m_outCtx->pb);
-        
-        //        if(m_outStrm->codec->extradata!=NULL)
-        //            free(m_outStrm->codec->extradata);
-        avformat_free_context(m_outCtx);
-        avcodec_close(m_pOutCodecCtx);
-        av_free(m_pOutCodecCtx);
-        m_outFmt = NULL;
-        m_outCtx = NULL;
-        if(m_EncodeID == AV_CODEC_ID_MJPEG)
-            av_packet_unref(&m_prevPkt);
-    }
-    
-    [self ClearQueue];
-    
-    return;
-}
 
 -(void)ClearQueue
 {
@@ -4728,14 +4595,18 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         memcpy(dst,frame->data[0]+hh*frame->linesize[0],frame->linesize[0]);
         dst+=d;
     }
+    
+    
     d = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
     dst = (unsigned char *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1);
+    
     h>>=1;
     for(hh=0;hh<h;hh++)
     {
         memcpy(dst,frame->data[1]+hh*frame->linesize[1],frame->linesize[1]);
         dst+=d;
     }
+    
     d = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 2);
     dst = (unsigned char *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 2);
     for(hh=0;hh<h;hh++)
@@ -4751,7 +4622,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 {
     
     CVPixelBufferRef imageBuffer = [self copyDataFromBuffer:pOutFrame toYUVPixelBufferWithWidth:_nRecordWidth Height:_nRecordHeight];
-   // NSLog(@"fps = %d",nFps);
+    // NSLog(@"fps = %d",nFps);
     CMTime pts = CMTimeMake(_frameCount, nFps);
     CMTime duration = kCMTimeInvalid;
     VTEncodeInfoFlags flags;
@@ -4883,7 +4754,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     [_gpCmd_Socket Write:data];
     
     NSData *data_rev = [_gpCmd_Socket Read:14 timeout:100];
-
+    
     Byte *dat=NULL;
     int nLen=0;
     if(data_rev)
@@ -5913,8 +5784,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
      
      }
      */
-
-    #endif
+    
+#endif
     if (bind(self.videofd, (struct sockaddr *)&myaddr,sizeof(myaddr)) < 0) {
         fprintf(stderr, "bind failed! (%s)\n", strerror(errno));
         shutdown(self.videofd, 2);
@@ -5922,7 +5793,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         self.videofd = -1;
         return -5;
     }
-
+    
     return 0;
 }
 
@@ -5984,6 +5855,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 
 -(void)doReceiveGPRTP{
     memset(_readRtpBuffer, 0, 1600);
+    NSLog(@"Start read RTPB data~~~");
     if(self.nIC_Type == IC_GPRTPB)
     {
         if(self.jpg0==nil)
@@ -6012,7 +5884,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         _databuffer=NULL;
     }
     _databuffer =(char *) malloc(1450*32);//new char[1450*32];
-    int LEN_Buffer = (640*480*3)/2;
+    int LEN_Buffer = (1280*720*3)/2;
     _jpgbuffer = (char *) malloc(LEN_Buffer);
     __block int64_t  nTime1_pre=av_gettime()/1000;
     __block int64_t  nTime1_current;
@@ -6065,7 +5937,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 nTime1_pre = nTime1_current;
             }
             tv.tv_sec = 0;
-            tv.tv_usec = 1000;
+            tv.tv_usec = 1000*5;
             FD_ZERO(&read_fd);
             FD_SET(weakself.videofd, &read_fd);
             int ret=select(weakself.videofd + 1, &read_fd, NULL, NULL, &tv);
@@ -6080,14 +5952,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     [weakself.packetLock unlock];
                     if(self.nIC_Type == IC_GPRTPB)
                     {
-                        @autoreleasepool
+                        //@autoreleasepool
                         {
                             if (nbytes >= 9)
                             {
                                 jpginx =  weakself.readRtpBuffer[1] * 0x100 + weakself.readRtpBuffer[0];
                                 jpg_pack_count = (uint8_t) weakself.readRtpBuffer[2];
                                 jpg_udp_inx = (uint8_t) weakself.readRtpBuffer[3];
-                                if(jpg_udp_inx>=50)
+                                if(jpg_udp_inx>100)
                                     continue;
                                 JPEG_BUFFER *jpg = [self F_FindJpegBuffer:jpginx];
                                 if(jpg.nJpegInx== 0 || jpg.nJpegInx == jpginx) {
@@ -6102,7 +5974,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                     if(jpg->mInx[jpg_udp_inx] == 0)
                                     {
                                         jpg->mInx[jpg_udp_inx] = 1;
-                                        memcpy(jpg.buffer + jpg_udp_inx * (1450 - 8), weakself.readRtpBuffer + 8,1450 - 8);
+                                        
+                                        if(jpg_udp_inx * (1450 - 8)+1450 - 8 < 400*1024)     //防止图片太大出现溢出
+                                        {
+                                            memcpy(jpg.buffer + jpg_udp_inx * (1450 - 8), weakself.readRtpBuffer + 8,1450 - 8);
+                                        }
                                         jpg.nCount++;
                                     }
                                     else
@@ -6124,7 +6000,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                         if(bOK)
                                         {
                                             NSData *frame_ = [NSData  dataWithBytes:jpg.buffer length:jpg_pack_count * (1450 - 8)];
-                                            [weakself Decord_SN:frame_];
+                                            [weakself DecordData_Mjpeg:frame_];
                                         }
                                         else
                                         {
@@ -6208,7 +6084,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                                     if(bOK)
                                                     {
                                                         NSData *frame_ = [NSData  dataWithBytes:weakself.jpgbuffer length:ix];
-                                                        [weakself Decord_SN:frame_];
+                                                        [weakself DecordData_Mjpeg:frame_];
                                                     }
                                                 }
                                             }
@@ -6231,6 +6107,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     }
                 }
             }
+            usleep(1000*1.5);
         }
         [weakself F_SentRTPStop];
         usleep(1000*5);
@@ -6604,7 +6481,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         Byte EOI[]={0xff,0xd9};
         [self.mjpgFrame appendBytes:EOI length:2];
         __block NSData *frame_ = [NSData dataWithData:self.mjpgFrame];
-        [self Decord_SN:frame_];
+        [self DecordData_Mjpeg:frame_];
     }
 }
 
@@ -7074,7 +6951,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     if(m_bSaveVideo)
     {
-        
         MyFrame *mFrame = [[MyFrame alloc] init];
         mFrame->pFrame = av_frame_alloc();
         mFrame->pFrame->width=_nRecordWidth;
@@ -7113,7 +6989,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 av_frame_unref(pFrame);
                 av_frame_free(&pFrame);
             }
-            [videoFrames removeAllObjects];
+            if(videoFrames.count>=5)
+            {
+                MyFrame *tempFrame = videoFrames[0];
+                [videoFrames removeObjectAtIndex:0];
+                av_free(tempFrame->pFrame->data[0]);
+                av_frame_unref(tempFrame->pFrame);
+                av_frame_free(&(tempFrame->pFrame));
+            }
             [videoFrames addObject:mFrame];
         }
         
@@ -7143,15 +7026,15 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 self.nVaildT = 0;
             }
             /*
-            else
-            {
-                self.nVaildT++;
-                if(self.nVaildT>=10)
-                {
-                    self.nVaildT=10;
-                    //self.bVaild = NO;
-                }
-            }
+             else
+             {
+             self.nVaildT++;
+             if(self.nVaildT>=10)
+             {
+             self.nVaildT=10;
+             //self.bVaild = NO;
+             }
+             }
              */
         }
     }
@@ -7688,7 +7571,32 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
 }
 
-
+-(void)naSetWifiPassword:(char *)sPassword
+{
+    int nLen =(int)strlen(sPassword);
+    if(nLen==0)
+        return;
+    if(nLen>64)
+        return;
+    uint8  msg[80];
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x30;
+    msg[6] = 0x02;
+    msg[7] = (uint8)nLen;
+    for(int i=0;i<nLen;i++)
+    {
+        msg[8+i] = (uint8)(sPassword[i]);
+    }
+    NSData *data = [[NSData  alloc] initWithBytes:msg length:8+nLen];
+    [self F_SetOpInfo];
+    
+    [self F_SentUdp:data Server:self.sSerVerIP Port:20000];
+    
+}
 -(int)naGetFiles:(TYPE_FILES)ntype
 {
     __weak JH_WifiCamera *weakself = self;
@@ -8012,7 +7920,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         fd_set   set;
         //int64_t ad = av_gettime();
         NSLog(@"Start Read Data!!!!");
-       // while(weakself.GKA_Data_Socket.bConnected)
+        // while(weakself.GKA_Data_Socket.bConnected)
         self.isCancelled=false;
         while(!self.isCancelled)
         {
@@ -8039,7 +7947,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     [weakself.packetLock unlock];
                     if(weakself.bSendDecordGKA)
                     {
-                        [weakself DecordData:nLen];
+                        [weakself DecordData_H264:nLen];
                     }
                 }
             }
@@ -8344,8 +8252,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                           m_codecCtx->width/2, m_codecCtx->height/2, pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
     
     /*
-    img_convert_ctx_Rec =  sws_getContext(m_codecCtx->width, m_codecCtx->height, pix_format,
-                                          _nRecordWidth, _nRecordHeight, pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
+     img_convert_ctx_Rec =  sws_getContext(m_codecCtx->width, m_codecCtx->height, pix_format,
+     _nRecordWidth, _nRecordHeight, pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
      */
     
     
@@ -8383,10 +8291,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 {
     if(_nIC_Type == IC_SN)
     {
-    _nDispWidth = 640;
-    _nDispHeight = 360;
-    if(b480)
-        _nDispHeight = 480;
+        _nDispWidth = 640;
+        _nDispHeight = 360;
+        if(b480)
+            _nDispHeight = 480;
     }
     
     if(m_decodedFrame == NULL)
@@ -8450,15 +8358,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             {
                 [weakself.delegate StatusChanged:self.nSdStatus & 0xFF];
             }
-            /*
-             if(weakself.nSdStatus & SD_SNAP)
-             {
-             weakself.nSdStatus &=(SD_SNAP^0xFFFF);
-             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-             [weakself.delegate StatusChanged:self.nSdStatus & 0xFF];
-             });
-             }
-             */
+            
         });
 #endif
     }
@@ -8521,7 +8421,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)naGKA_Pause
 {
     //self.bNoCheckRelink = YES;
-   // [self F_CloseVideoStream_A:self.nSetStream];
+    // [self F_CloseVideoStream_A:self.nSetStream];
 }
 
 -(void)naGKA_Resume
@@ -8562,8 +8462,19 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 
 
 
-//-(void)DecordData:(NSData *)data
--(void)DecordData:(int )length
+
+
+
+
+-(void)naSetScale:(float)n
+{
+    _nScale = n;
+    
+}
+
+#pragma mark  解码
+//解码自定义协议传输H264
+-(void)DecordData_H264:(int )length
 {
     self.nRelinkTime = 0;
     if(length<=0)
@@ -8644,9 +8555,21 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                           pFrameYUV->data, pFrameYUV->linesize);
                 
                 int dd = (int)(_nScale*100);
+                
                 if(dd <=100) //不放大
                 {
-                      ;
+                    if(pFrameSnap==NULL)
+                    {
+                        pFrameSnap = av_frame_alloc();
+                        pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                        pFrameSnap->width = _nDispWidth;
+                        pFrameSnap->height =_nDispHeight;
+                        ret = av_image_alloc(
+                                             pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                             pFrameSnap->height,
+                                             AV_PIX_FMT_YUV420P, 4);
+                        _my_snapframe->pFrame = pFrameSnap;
+                    }
                 }
                 else
                 {
@@ -8667,6 +8590,9 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                               pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
                               pFrameYUV_D->width,pFrameYUV_D->height,
                               kFilterLinear);
+                    
+                    
+                    
                     av_free(pFrameYUV->data[0]);
                     av_frame_free(&pFrameYUV);
                     pFrameYUV = av_frame_alloc();
@@ -8678,6 +8604,19 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                          pFrameYUV->data, pFrameYUV->linesize, pFrameYUV->width,
                                          pFrameYUV->height,
                                          AV_PIX_FMT_YUV420P, 4);
+                    
+                    if(pFrameSnap==NULL)
+                    {
+                        pFrameSnap = av_frame_alloc();
+                        pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                        pFrameSnap->width = _nDispWidth;
+                        pFrameSnap->height =_nDispHeight;
+                        ret = av_image_alloc(
+                                             pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                             pFrameSnap->height,
+                                             AV_PIX_FMT_YUV420P, 4);
+                        _my_snapframe->pFrame = pFrameSnap;
+                    }
                     
                     int cx =  pFrameYUV_D->width/2;
                     int cy =  pFrameYUV_D->height/2;
@@ -8729,25 +8668,23 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 
                 if(self.bFlip)
                 {
-                 //   [self frame_rotate_180:pFrameYUV DesFrame:frame_a];
-                  //  av_frame_copy(pFrameYUV, frame_a);
                     
-                        I420Rotate(pFrameYUV->data[0], pFrameYUV->linesize[0],
-                                       pFrameYUV->data[1], pFrameYUV->linesize[1],
-                                       pFrameYUV->data[2], pFrameYUV->linesize[2],
-                                       frame_a->data[0], frame_a->linesize[0],
-                                       frame_a->data[1], frame_a->linesize[1],
-                                       frame_a->data[2], frame_a->linesize[2],
-                                       frame_a->width, frame_a->height,kRotate180);
+                    I420Rotate(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                               pFrameYUV->data[1], pFrameYUV->linesize[1],
+                               pFrameYUV->data[2], pFrameYUV->linesize[2],
+                               frame_a->data[0], frame_a->linesize[0],
+                               frame_a->data[1], frame_a->linesize[1],
+                               frame_a->data[2], frame_a->linesize[2],
+                               frame_a->width, frame_a->height,kRotate180);
                     
                     
-                        I420Copy(frame_a->data[0], frame_a->linesize[0],
-                                           frame_a->data[1], frame_a->linesize[1],
-                                           frame_a->data[2], frame_a->linesize[2],
-                                           pFrameYUV->data[0], frame_a->linesize[0],
-                                           pFrameYUV->data[1], frame_a->linesize[1],
-                                           pFrameYUV->data[2], frame_a->linesize[2],
-                                           frame_a->width, frame_a->height);
+                    I420Copy(frame_a->data[0], frame_a->linesize[0],
+                             frame_a->data[1], frame_a->linesize[1],
+                             frame_a->data[2], frame_a->linesize[2],
+                             pFrameYUV->data[0], frame_a->linesize[0],
+                             pFrameYUV->data[1], frame_a->linesize[1],
+                             pFrameYUV->data[2], frame_a->linesize[2],
+                             frame_a->width, frame_a->height);
                 }
                 
                 if(self.b3D)
@@ -8764,7 +8701,19 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 }
                 [self SaveVideo];
                 pFrameYUV->key_frame= nKeyFrame;
-                [self F_SavePhoto:pFrameYUV];
+                if(pFrameSnap!=NULL)
+                {
+                    @synchronized(_my_snapframe)
+                    {
+                        I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                 pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                 pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                 pFrameSnap->data[0], pFrameSnap->linesize[0],
+                                 pFrameSnap->data[1], pFrameSnap->linesize[1],
+                                 pFrameSnap->data[2], pFrameSnap->linesize[2],
+                                 pFrameYUV->width, pFrameYUV->height);
+                    }
+                }
                 [self PlatformDisplay:pFrameYUV];
             }
             av_packet_unref(&packetA);
@@ -8773,15 +8722,335 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     }
     
 }
-
-
--(void)naSetScale:(float)n
+//解码rtsp http 标准协议传输H264
+-(void)DecordData_ffmpeg
 {
-    _nScale = n;
     
+    if(self.nIC_Type == IC_SN)
+        return;
+    if(self.nIC_Type == IC_GKA)
+        return;
+    int ret;
+    //bool  bMMisRTP = false;
+    bFindKeyFrame = YES;
+    self.nLost = 0;
+    self.nRelinkCount = 0;
+    
+    int64_t subt;
+    NSTimeInterval t1 = [[NSDate date] timeIntervalSince1970] * 1000;
+    NSTimeInterval t2;
+    
+    AVPacket pkt = {0};
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+    [self F_SetTimeout:2000];
+    while(self.bPlaying)
+    {
+        
+        if(self.bSetpause)   // && self.imageView)
+        {
+            usleep(1000*10);
+            continue;
+        }
+        [self F_SetTimeout:0];
+        int  nKeyFrame = NO;
+        if(av_read_frame(m_formatCtx, &pkt)>=0)
+        {
+            [self F_SetTimeout:0];
+            
+            ret = -1;
+            
+            if (avcodec_send_packet(m_codecCtx, &pkt) == 0)
+            {
+                if (avcodec_receive_frame(m_codecCtx, m_decodedFrame) != 0) {
+                    ret = -1;
+                } else {
+                    ret = 0;
+                }
+            }
+            else
+            {
+                ret = -1;
+            }
+            
+            /*
+             
+             int frameFinished = 0;
+             ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &frameFinished, &pkt);
+             if(ret<0 || frameFinished == 0)
+             {
+             ret = -1;
+             }
+             else
+             {
+             ret = 0;
+             }
+             */
+            
+            if(ret == 0 )//&& !bFindKeyFrame)
+            {
+                nKeyFrame =m_decodedFrame->key_frame;
+                self.nRelinkTime = 0;
+                if(pkt.stream_index == m_videoStream)
+                {
+                    if(ret == 0)
+                    {
+                        sws_scale(img_convert_ctx,
+                                  (const uint8_t *const *) m_decodedFrame->data,
+                                  m_decodedFrame->linesize, 0,
+                                  m_codecCtx->height,
+                                  pFrameYUV->data, pFrameYUV->linesize);
+                        
+                        int dd = (int)(_nScale*100);
+                        if(dd <=100) //不放大
+                        {
+                            if(pFrameSnap==NULL)
+                            {
+                                pFrameSnap = av_frame_alloc();
+                                pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                                pFrameSnap->width = m_codecCtx->width;
+                                pFrameSnap->height =m_codecCtx->height;
+                                ret = av_image_alloc(
+                                                     pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                                     pFrameSnap->height,
+                                                     AV_PIX_FMT_YUV420P, 4);
+                                _my_snapframe->pFrame = pFrameSnap;
+                            }
+                        }
+                        else
+                        {
+                            AVFrame *pFrameYUV_D = av_frame_alloc();
+                            pFrameYUV_D->format = AV_PIX_FMT_YUV420P;
+                            pFrameYUV_D->width = (int)(m_codecCtx->width*_nScale);
+                            pFrameYUV_D->height = (int)(m_codecCtx->height*_nScale);
+                            ret = av_image_alloc(
+                                                 pFrameYUV_D->data, pFrameYUV_D->linesize, pFrameYUV_D->width,
+                                                 pFrameYUV_D->height,
+                                                 AV_PIX_FMT_YUV420P, 4);
+                            I420Scale(pFrameYUV->data[0],pFrameYUV->linesize[0],
+                                      pFrameYUV->data[1],pFrameYUV->linesize[1],
+                                      pFrameYUV->data[2],pFrameYUV->linesize[2],
+                                      pFrameYUV->width,pFrameYUV->height,
+                                      pFrameYUV_D->data[0],pFrameYUV_D->linesize[0],
+                                      pFrameYUV_D->data[1],pFrameYUV_D->linesize[1],
+                                      pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
+                                      pFrameYUV_D->width,pFrameYUV_D->height,
+                                      kFilterLinear);
+                            av_free(pFrameYUV->data[0]);
+                            av_frame_free(&pFrameYUV);
+                            pFrameYUV = av_frame_alloc();
+                            
+                            pFrameYUV->format = AV_PIX_FMT_YUV420P;
+                            pFrameYUV->width = m_codecCtx->width;
+                            pFrameYUV->height =m_codecCtx->height;
+                            ret = av_image_alloc(
+                                                 pFrameYUV->data, pFrameYUV->linesize, pFrameYUV->width,
+                                                 pFrameYUV->height,
+                                                 AV_PIX_FMT_YUV420P, 4);
+                            
+                            if(pFrameSnap==NULL)
+                            {
+                                pFrameSnap = av_frame_alloc();
+                                pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                                pFrameSnap->width = m_codecCtx->width;
+                                pFrameSnap->height =m_codecCtx->height;
+                                ret = av_image_alloc(
+                                                     pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                                     pFrameSnap->height,
+                                                     AV_PIX_FMT_YUV420P, 4);
+                                _my_snapframe->pFrame = pFrameSnap;
+                            }
+                            
+                            int cx =  pFrameYUV_D->width/2;
+                            int cy =  pFrameYUV_D->height/2;
+                            
+                            int lx = cx-(pFrameYUV->width/2);
+                            lx=(lx+1)/2;
+                            lx*=2;
+                            
+                            
+                            int ly = cy-(pFrameYUV->height/2);
+                            ly = (ly+1)/2;
+                            ly*=2;
+                            
+                            Byte *psrc;
+                            Byte *pdes;
+                            
+                            Byte *pSrcStart = pFrameYUV_D->data[0]+ly*pFrameYUV_D->linesize[0]+lx;
+                            pdes =(Byte*) pFrameYUV->data[0];
+                            
+                            for(int yy=0;yy<pFrameYUV->height;yy++)
+                            {
+                                psrc =(Byte*)pSrcStart+yy*pFrameYUV_D->linesize[0];
+                                memcpy(pdes+yy*pFrameYUV->linesize[0],psrc,(size_t)(pFrameYUV->linesize[0]));
+                            }
+                            
+                            
+                            
+                            pSrcStart = pFrameYUV_D->data[1]+ly/2*pFrameYUV_D->linesize[1]+lx/2;
+                            pdes = pFrameYUV->data[1];
+                            
+                            for(int yy=0;yy<pFrameYUV->height/2;yy++)
+                            {
+                                psrc = pSrcStart+yy*pFrameYUV_D->linesize[1];
+                                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[1]);
+                                
+                            }
+                            
+                            pSrcStart = pFrameYUV_D->data[2]+ly/2*pFrameYUV_D->linesize[2]+lx/2;
+                            pdes = pFrameYUV->data[2];
+                            
+                            for(int yy=0;yy<pFrameYUV->height/2;yy++)
+                            {
+                                psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
+                                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
+                            }
+                            av_free(pFrameYUV_D->data[0]);
+                            av_frame_free(&pFrameYUV_D);
+                        }
+                        
+                        
+                        if(self.bFlip)
+                        {
+                            //[self frame_rotate_180:pFrameYUV DesFrame:frame_a];
+                            //av_frame_copy(pFrameYUV, frame_a);
+                            I420Rotate(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                       pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                       pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                       frame_a->data[0], frame_a->linesize[0],
+                                       frame_a->data[1], frame_a->linesize[1],
+                                       frame_a->data[2], frame_a->linesize[2],
+                                       frame_a->width, frame_a->height,kRotate180);
+                            
+                            
+                            I420Copy(frame_a->data[0], frame_a->linesize[0],
+                                     frame_a->data[1], frame_a->linesize[1],
+                                     frame_a->data[2], frame_a->linesize[2],
+                                     pFrameYUV->data[0], frame_a->linesize[0],
+                                     pFrameYUV->data[1], frame_a->linesize[1],
+                                     pFrameYUV->data[2], frame_a->linesize[2],
+                                     frame_a->width, frame_a->height);
+                        }
+                        
+                        if(self.b3D)
+                        {
+                            if(self.b3DA)
+                            {
+                                sws_scale(img_convert_ctx_half,
+                                          (const uint8_t *const *) pFrameYUV->data,
+                                          pFrameYUV->linesize, 0,
+                                          m_codecCtx->height,
+                                          frame_b->data, frame_b->linesize);
+                                
+                                // frame_link2frame(frame_b,pFrameYUV);
+                                [self frame_link2frame:frame_b DES:pFrameYUV];;
+                                [self SaveVideo];
+                                pFrameYUV->key_frame = nKeyFrame;
+                                if(pFrameSnap!=NULL)
+                                {
+                                    @synchronized(_my_snapframe)
+                                    {
+                                        I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                                 pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                                 pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                                 pFrameSnap->data[0], pFrameSnap->linesize[0],
+                                                 pFrameSnap->data[1], pFrameSnap->linesize[1],
+                                                 pFrameSnap->data[2], pFrameSnap->linesize[2],
+                                                 pFrameYUV->width, pFrameYUV->height);
+                                    }
+                                }
+                                
+                                //[self F_SavePhoto:pFrameYUV];
+                                
+                                [self PlatformDisplay:pFrameYUV];
+                            }
+                            else
+                            {
+                                [self SaveVideo];
+                                pFrameYUV->key_frame = nKeyFrame;
+                                
+                                if(pFrameSnap!=NULL)
+                                {
+                                    @synchronized(_my_snapframe)
+                                    {
+                                        I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                                 pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                                 pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                                 pFrameSnap->data[0], pFrameSnap->linesize[0],
+                                                 pFrameSnap->data[1], pFrameSnap->linesize[1],
+                                                 pFrameSnap->data[2], pFrameSnap->linesize[2],
+                                                 pFrameYUV->width, pFrameYUV->height);
+                                    }
+                                }
+                                
+                                //[self F_SavePhoto:pFrameYUV];
+                                
+                                sws_scale(img_convert_ctx_half,
+                                          (const uint8_t *const *) pFrameYUV->data,
+                                          pFrameYUV->linesize, 0,
+                                          m_codecCtx->height,
+                                          frame_b->data, frame_b->linesize);
+                                
+                                //frame_link2frame(frame_b,pFrameYUV);
+                                [self frame_link2frame:frame_b DES:pFrameYUV];;
+                                [self PlatformDisplay:pFrameYUV];
+                                
+                            }
+                            
+                        }
+                        else
+                        {
+                            [self SaveVideo];
+                            pFrameYUV->key_frame= nKeyFrame;
+                            if(pFrameSnap!=NULL)
+                            {
+                                @synchronized(_my_snapframe)
+                                {
+                                    I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                             pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                             pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                             pFrameSnap->data[0], pFrameSnap->linesize[0],
+                                             pFrameSnap->data[1], pFrameSnap->linesize[1],
+                                             pFrameSnap->data[2], pFrameSnap->linesize[2],
+                                             pFrameYUV->width, pFrameYUV->height);
+                                }
+                            }
+                            //[self F_SavePhoto:pFrameYUV];
+                            [self PlatformDisplay:pFrameYUV];
+                            
+                        }
+                        if(self.imageView)
+                        {
+                            t2 = [[NSDate date] timeIntervalSince1970] * 1000;
+                            subt = t2-t1;
+                            if(subt<40)
+                            {
+                                subt= 40-subt;
+                                usleep((useconds_t)(subt*1000) );
+                            }
+                            t1 = [[NSDate date] timeIntervalSince1970] * 1000;
+                        }
+                    }
+                }
+                
+            }
+            av_packet_unref(&pkt);
+        }
+    }
+    [self F_SetTimeout:1];
+    if (m_formatCtx!=NULL) {
+        m_formatCtx->interrupt_callback.opaque = NULL;
+        m_formatCtx->interrupt_callback.callback = NULL;
+    }
+    self.bPlaying = NO;
+    self.bNeedRecon = YES;
+    self.nFlag = 3;
+    [self Releaseffmpeg];
 }
 
--(void)Decord_SN:(NSData *)data
+//解码自定义协议传输的mjgpeg
+-(void)DecordData_Mjpeg:(NSData *)data
 {
     
     self.nRelinkTime = 0;
@@ -8802,15 +9071,15 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             packetA.size = size;
             /*
              int frameFinished = 0;
-            ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &frameFinished, &packetA);
-            if(ret<0 || frameFinished == 0)
-            {
-                ret = -1;
-            }
-            else
-            {
-                ret = 0;
-            }
+             ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &frameFinished, &packetA);
+             if(ret<0 || frameFinished == 0)
+             {
+             ret = -1;
+             }
+             else
+             {
+             ret = 0;
+             }
              */
             ret = -1;
             if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
@@ -8848,7 +9117,20 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 int dd = (int)(_nScale*100);
                 if(dd <=100) //不放大
                 {
-                    
+                    if(pFrameSnap==NULL)
+                    {
+                        pFrameSnap = av_frame_alloc();
+                        
+                        pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                        pFrameSnap->width = _nDispWidth;
+                        pFrameSnap->height =_nDispHeight;
+                        
+                        ret = av_image_alloc(
+                                             pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                             pFrameSnap->height,
+                                             AV_PIX_FMT_YUV420P, 4);
+                        _my_snapframe->pFrame = pFrameSnap;
+                    }
                 }
                 else
                 {
@@ -8861,14 +9143,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                          pFrameYUV_D->height,
                                          AV_PIX_FMT_YUV420P, 4);
                     I420Scale(pFrameYUV->data[0],pFrameYUV->linesize[0],
-                                      pFrameYUV->data[1],pFrameYUV->linesize[1],
-                                      pFrameYUV->data[2],pFrameYUV->linesize[2],
-                                      pFrameYUV->width,pFrameYUV->height,
-                                      pFrameYUV_D->data[0],pFrameYUV_D->linesize[0],
-                                      pFrameYUV_D->data[1],pFrameYUV_D->linesize[1],
-                                      pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
-                                      pFrameYUV_D->width,pFrameYUV_D->height,
-                                      kFilterLinear);
+                              pFrameYUV->data[1],pFrameYUV->linesize[1],
+                              pFrameYUV->data[2],pFrameYUV->linesize[2],
+                              pFrameYUV->width,pFrameYUV->height,
+                              pFrameYUV_D->data[0],pFrameYUV_D->linesize[0],
+                              pFrameYUV_D->data[1],pFrameYUV_D->linesize[1],
+                              pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
+                              pFrameYUV_D->width,pFrameYUV_D->height,
+                              kFilterLinear);
                     
                     av_free(pFrameYUV->data[0]);
                     av_frame_free(&pFrameYUV);
@@ -8882,6 +9164,21 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                          pFrameYUV->data, pFrameYUV->linesize, pFrameYUV->width,
                                          pFrameYUV->height,
                                          AV_PIX_FMT_YUV420P, 4);
+                    
+                    if(pFrameSnap==NULL)
+                    {
+                        pFrameSnap = av_frame_alloc();
+                        
+                        pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                        pFrameSnap->width = _nDispWidth;
+                        pFrameSnap->height =_nDispHeight;
+                        
+                        ret = av_image_alloc(
+                                             pFrameSnap->data, pFrameSnap->linesize, pFrameSnap->width,
+                                             pFrameSnap->height,
+                                             AV_PIX_FMT_YUV420P, 4);
+                        _my_snapframe->pFrame = pFrameSnap;
+                    }
                     
                     int cx =  pFrameYUV_D->width/2;
                     int cy =  pFrameYUV_D->height/2;
@@ -8967,7 +9264,20 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 }
                 [self SaveVideo];
                 pFrameYUV->key_frame = 1;
-                [self F_SavePhoto:pFrameYUV];
+                if(pFrameSnap!=NULL)
+                {
+                    @synchronized(_my_snapframe)
+                    {
+                        I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                                 pFrameYUV->data[1], pFrameYUV->linesize[1],
+                                 pFrameYUV->data[2], pFrameYUV->linesize[2],
+                                 pFrameSnap->data[0], pFrameSnap->linesize[0],
+                                 pFrameSnap->data[1], pFrameSnap->linesize[1],
+                                 pFrameSnap->data[2], pFrameSnap->linesize[2],
+                                 pFrameYUV->width, pFrameYUV->height);
+                    }
+                }
+                //[self F_SavePhoto:pFrameYUV];
                 [self PlatformDisplay:pFrameYUV];
                 
             }
@@ -9147,7 +9457,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         return;
     }
-
+    
     bzero((char *) &myaddr, sizeof(myaddr));
     myaddr.sin_family = AF_INET;
     myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -9167,7 +9477,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     _bRead20000 = YES;
     __weak  JH_WifiCamera *weakself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        Byte readBuff[30];
+        Byte readBuff[50];
         int size;
         struct sockaddr_in servaddr; /* the server's full addr */
         struct timeval tv;
@@ -9197,7 +9507,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 continue;
             }
             
-            ssize_t nbytes = recvfrom(weakself.socket_udp20000, readBuff,27, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
+            ssize_t nbytes = recvfrom(weakself.socket_udp20000, readBuff,48, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
             if(nbytes>0)
             {
                 NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];

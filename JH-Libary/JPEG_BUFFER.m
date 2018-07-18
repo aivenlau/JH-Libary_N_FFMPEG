@@ -17,10 +17,10 @@
     self = [super init];
     if(self)
     {
-        _buffer = malloc(100*1024);
+        _buffer = malloc(400*1024);
         _nCount = 0;;
         _nJpegInx = 0;
-        memset(mInx, 0, 50);
+        memset(mInx, 0, 100);
     }
     return self;
 }
@@ -29,7 +29,7 @@
 {
     _nCount = 0;;
     _nJpegInx = 0;
-    memset(mInx, 0, 50);
+    memset(mInx, 0, 100);
     
 }
 -(void)Release
@@ -41,7 +41,7 @@
         }
         _nCount = 0;;
         _nJpegInx = 0;
-        memset(mInx, 0, 50);
+        memset(mInx, 0, 100);
 }
 
 

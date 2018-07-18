@@ -240,7 +240,8 @@
         // PHPhotoLibrary_class will only be non-nil on iOS 8.0 or later.
         Class PHPhotoLibrary_class = NSClassFromString(@"PHPhotoLibrary");
         
-        if (PHPhotoLibrary_class) {
+        if (PHPhotoLibrary_class)
+        {
           // dynamic runtime code for code chunk listed above
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"

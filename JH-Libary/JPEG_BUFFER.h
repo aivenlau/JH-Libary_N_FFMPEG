@@ -11,7 +11,7 @@
 @interface JPEG_BUFFER : NSObject
 {
 @public
-    uint8_t mInx[50];
+    uint8_t mInx[100];
 }
 
 @property(assign,nonatomic)uint8_t *buffer;
