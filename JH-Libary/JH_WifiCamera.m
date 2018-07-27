@@ -455,7 +455,7 @@
 
 @property (assign,nonatomic)  int64_t nRecTime;
 @property (assign,nonatomic)  int64_t nRecTimePreStart;
-@property (assign,nonatomic)  BOOL  bRealRec;
+//@property (assign,nonatomic)  BOOL  bRealRec;
 
 @property (assign,nonatomic)  BOOL  bGKACmd_UDP;
 @property (assign,nonatomic)  BOOL  bGKA_ConnOK;
@@ -1278,7 +1278,7 @@ static   int   interrupt_cb( void   *para)
         _bWhite = NO;
         _bGKACmd_UDP = true;
         _bGKA_ConnOK = false;
-        self.bRealRec = NO;
+      //  self.bRealRec = NO;
         _nRecordWidth = 640;
         _nRecordHeight = 360;
         _readRtpBuffer = malloc(1600);
@@ -1803,8 +1803,8 @@ static   int   interrupt_cb( void   *para)
     int i=0;
     for(i=0; i<m_formatCtx->nb_streams; i++)
     {
-        if(m_formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO)
-            //if(m_formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
+        //if(m_formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO)
+        if(m_formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
         {
             m_videoStream = i;
             videoindex=i;
@@ -1824,8 +1824,10 @@ static   int   interrupt_cb( void   *para)
     }
     
     
-    m_codecCtx = m_formatCtx->streams[videoindex]->codec;
-    pCodec=avcodec_find_decoder(m_codecCtx->codec_id);
+    //m_codecCtx = m_formatCtx->streams[videoindex]->codec;
+    //pCodec=avcodec_find_decoder(m_codecCtx->codec_id);
+    
+    pCodec = avcodec_find_decoder(m_formatCtx->streams[videoindex]->codecpar->codec_id);
     
     if(pCodec==NULL) {
         NSLog(@"Unsupported codec!");
@@ -1837,6 +1839,10 @@ static   int   interrupt_cb( void   *para)
         }
         return NO;
     }
+    
+    m_codecCtx = avcodec_alloc_context3(pCodec);
+    avcodec_parameters_to_context(m_codecCtx, m_formatCtx->streams[videoindex]->codecpar);
+    
     err_code = avcodec_open2(m_codecCtx, pCodec, NULL);
     
     if(err_code <0)
@@ -1844,9 +1850,11 @@ static   int   interrupt_cb( void   *para)
         NSLog(@"avcodec_open2 failed! error");
         if (m_formatCtx)
         {
+            avcodec_free_context(&m_codecCtx);
             avformat_close_input(&m_formatCtx);
             avformat_free_context(m_formatCtx);
             m_formatCtx = NULL;
+            m_codecCtx = NULL;
         }
         return NO;
     }
@@ -2081,6 +2089,17 @@ static   int   interrupt_cb( void   *para)
 -(BOOL)naInit:(NSString *)sPath
 {
     
+    AVFrame *mFrame = av_frame_alloc();
+    
+    mFrame->width=_nRecordWidth;
+    mFrame->height=_nRecordHeight;
+    av_image_alloc(
+                   mFrame->data, mFrame->linesize, _nRecordWidth,
+                   _nRecordHeight,
+                   AV_PIX_FMT_YUV420P, 4);
+    av_freep(mFrame->data);
+    av_frame_free(&mFrame);
+    
     NSString *sPat =[sPath stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     sPat = [sPat lowercaseString];
     
@@ -2091,7 +2110,7 @@ static   int   interrupt_cb( void   *para)
     
     if(pFrameSnap !=NULL)
     {
-        av_free(pFrameSnap->data[0]);
+        av_freep(&(pFrameSnap->data[0]));
         av_frame_free(&pFrameSnap);
         pFrameSnap = NULL;
     }
@@ -2712,7 +2731,7 @@ static   int   interrupt_cb( void   *para)
                         weakself.bCanWrite = NO;
                         weakself.bNeedStop2Relink = NO;
                         weakself.nRelinkTime = 0;
-                        self.bRealRec = NO;
+                       // self.bRealRec = NO;
                         [weakself naInit:self.sPath];
                     }
                 }
@@ -2942,7 +2961,7 @@ static   int   interrupt_cb( void   *para)
     }
     [self StartSaveVideo];
     self.nSdStatus |=LocalRecording;
-    self.bRealRec = YES;
+  //  self.bRealRec = YES;
     [self F_SentStatus];
     NSLog(@"Start Record 1");
     return 0;
@@ -2950,6 +2969,10 @@ static   int   interrupt_cb( void   *para)
 
 -(int)naSaveVideo:(NSString *)sPath
 {
+    
+#if 1
+    return [self _naSaveVideo:sPath];
+#else
     if(self.bRecroding)
     {
         return -1;
@@ -2964,7 +2987,7 @@ static   int   interrupt_cb( void   *para)
     [self F_SentStatus];
     NSLog(@"Start Record 2");
     return 0;
-    
+#endif
     
 }
 -(int)naSaveVideo
@@ -2974,7 +2997,7 @@ static   int   interrupt_cb( void   *para)
 
 -(int) naStopSaveVideo
 {
-    self.bRealRec = NO;
+    //self.bRealRec = NO;
     if(!self.bRecroding)
     {
         return -1;
@@ -3618,24 +3641,24 @@ static   int   interrupt_cb( void   *para)
                w,h);
     
     
-    CVPixelBufferRef pixelBuffer = NULL;
+    CVPixelBufferRef pixelBufferA = NULL;
     OSType KVideoPixelFormatType = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
     NSDictionary *pixelBufferAttributes = @{(id)kCVPixelBufferIOSurfacePropertiesKey : @{}};
-    CVReturn result = CVPixelBufferCreate(NULL, w, h, KVideoPixelFormatType, (__bridge CFDictionaryRef)(pixelBufferAttributes), &pixelBuffer);
+    CVReturn result = CVPixelBufferCreate(NULL, w, h, KVideoPixelFormatType, (__bridge CFDictionaryRef)(pixelBufferAttributes), &pixelBufferA);
     if (result != kCVReturnSuccess) {
         NSLog(@"Unable to create cvpixelbuffer %d", result);
         return nil;
     }
     
-    CVPixelBufferLockBaseAddress(pixelBuffer,0);
-    unsigned char *yDestPlane = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0);
+    CVPixelBufferLockBaseAddress(pixelBufferA,0);
+    unsigned char *yDestPlane = CVPixelBufferGetBaseAddressOfPlane(pixelBufferA, 0);
     memcpy(yDestPlane,myframe->data[0],myframe->linesize[0]*h);
-    unsigned char *uvDestPlane = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1);
+    unsigned char *uvDestPlane = CVPixelBufferGetBaseAddressOfPlane(pixelBufferA, 1);
     memcpy(uvDestPlane, myframe->data[1],w * h/2);
-    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+    CVPixelBufferUnlockBaseAddress(pixelBufferA, 0);
     
     
-    CIImage *coreImage= [CIImage imageWithCVPixelBuffer:pixelBuffer];
+    CIImage *coreImage= [CIImage imageWithCVPixelBuffer:pixelBufferA];
     CIContext *MytemporaryContext = [CIContext contextWithOptions:nil];
     CGImageRef MyvideoImage = [MytemporaryContext createCGImage:coreImage
                                                        fromRect:CGRectMake(0, 0, w, h)];
@@ -3645,7 +3668,7 @@ static   int   interrupt_cb( void   *para)
                                                      scale:1.0
                                                orientation:UIImageOrientationUp];
     
-    CVPixelBufferRelease(pixelBuffer);
+    CVPixelBufferRelease(pixelBufferA);
     CGImageRelease(MyvideoImage);
     if(myframe!=NULL)
     {
@@ -3916,7 +3939,7 @@ uint8_t MP4AdtsFindSamplingRateIndex(uint32_t samplingRate)
     }
     return NUM_ADTS_SAMPLING_RATES - 1;
 }
-bool MP4AacGetConfiguration(uint8_t** ppConfig,
+bool MY_MP4AacGetConfiguration(uint8_t** ppConfig,
                             uint32_t* pConfigLength,
                             uint8_t profile,
                             uint32_t samplingRate,
@@ -4068,8 +4091,6 @@ bool MP4AacGetConfiguration(uint8_t** ppConfig,
             NSError *error=nil;
             [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionMixWithOthers error:&error];
             [_session setActive:NO error:&error];
-            
-            
         }
     }
 }
@@ -4120,12 +4141,12 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                           CMSampleBufferRef sampleBuffer )
 {
     if (status != noErr) {
-        NSLog(@"didCompressH264 error: with status %d, infoFlags %d", (int)status, (int)infoFlags);
+        //NSLog(@"didCompressH264 error: with status %d, infoFlags %d", (int)status, (int)infoFlags);
         return;
     }
     if (!CMSampleBufferDataIsReady(sampleBuffer))
     {
-        NSLog(@"didCompressH264 data is not ready ");
+        //NSLog(@"didCompressH264 data is not ready ");
         return;
     }
     JH_WifiCamera *myself = (__bridge JH_WifiCamera *)userData;
@@ -4164,7 +4185,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 int channelConfig = 2;
                 uint8_t *pConfig = NULL;
                 uint32_t configLength = 0;
-                MP4AacGetConfiguration(&pConfig, &configLength, profile, samplesPerSecond, channelConfig);
+                MY_MP4AacGetConfiguration(&pConfig, &configLength, profile, samplesPerSecond, channelConfig);
                 MP4SetTrackESConfiguration(myself->fileHandle, myself->audio_trkid, pConfig, configLength);
                 if(pConfig!=NULL)
                 {
@@ -4195,7 +4216,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             size_t offset = 0;
             const int lengthInfoSize = 4; // 返回的nalu数据前四个字节不是0001的startcode，而是大端模式的帧长度length
             int ds = 90000/(myself->nFps);  //   (1000/nfps*90000)/1000
-            // 循环获取nalu数据
+            // 循环获取nalu数据    因为有可能编码出来不止一帧。（当然，在本项目中，出来的就是一帧数据）
             while (offset < totalLength - lengthInfoSize)
             {
                 uint32_t naluLength = 0;
@@ -4377,6 +4398,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     MP4SetTimeScale(fileHandle, 90000);
     
     int nbit = (int)(_nRecordWidth*_nRecordHeight*4.5);
+    
     [self startEncodeSession:_nRecordWidth height:_nRecordHeight framerate:nFps bitrate:nbit];
     [self ClearQueue];
     
@@ -4397,10 +4419,17 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 
 -(int)writeVideo
 {
-    
-    __weak JH_WifiCamera *weakself = self;
-    MyFrame *mFrame = [[MyFrame alloc] init];
+#if 0
     m_bSaveVideo = true;
+#else
+    __weak JH_WifiCamera *weakself = self;
+    m_bSaveVideo = true;
+    //MyFrame *mFrame = [[MyFrame alloc] init];
+    
+    AVFrame *mFrame;
+    
+    AVFrame *mWriteFrame = NULL;
+    
     AVFrame *pFrame = NULL;
     
     //MyFrame *MyFrameX = nil;
@@ -4412,13 +4441,13 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     int64_t T2;
     T1 = av_gettime()/1000;
     int  delay = 1000/nFps -3;
-    mFrame->pFrame = av_frame_alloc();
+    mFrame = av_frame_alloc();
     av_image_alloc(
-                   mFrame->pFrame->data, mFrame->pFrame->linesize, _nRecordWidth,
+                   mFrame->data, mFrame->linesize, _nRecordWidth,
                    _nRecordHeight,
                    AV_PIX_FMT_YUV420P, 4);
-    mFrame->pFrame->width=_nRecordWidth;
-    mFrame->pFrame->height=_nRecordHeight;
+    mFrame->width=_nRecordWidth;
+    mFrame->height=_nRecordHeight;
     while(m_bSaveVideo)   // && m_Status== E_PlayerStatus_Playing)
     {
         pFrame = NULL;
@@ -4431,49 +4460,54 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             }
             if(pFrame==NULL)
             {
-
                 T1 = av_gettime()/1000;
                 usleep(1000*10);
                 continue;
             }
-            if(pFrame->width != mFrame->pFrame->width ||
-               pFrame->height != mFrame->pFrame->height)
+            if(pFrame->width != mFrame->width ||
+               pFrame->height != mFrame->height)
             {
                 I420Scale(pFrame->data[0], pFrame->linesize[0],
                           pFrame->data[1], pFrame->linesize[1],
                           pFrame->data[2], pFrame->linesize[2],
                           pFrame->width,pFrame->height,
-                          mFrame->pFrame->data[0], mFrame->pFrame->linesize[0],
-                          mFrame->pFrame->data[1], mFrame->pFrame->linesize[1],
-                          mFrame->pFrame->data[2], mFrame->pFrame->linesize[2],
-                          mFrame->pFrame->width, mFrame->pFrame->height,
+                          mFrame->data[0], mFrame->linesize[0],
+                          mFrame->data[1], mFrame->linesize[1],
+                          mFrame->data[2], mFrame->linesize[2],
+                          mFrame->width, mFrame->height,
                           kFilterLinear);
+                mWriteFrame =  mFrame;
             }
             else
             {
+                /*
                 I420Copy(pFrame->data[0], pFrame->linesize[0],
                          pFrame->data[1], pFrame->linesize[1],
                          pFrame->data[2], pFrame->linesize[2],
-                         mFrame->pFrame->data[0], mFrame->pFrame->linesize[0],
-                         mFrame->pFrame->data[1], mFrame->pFrame->linesize[1],
-                         mFrame->pFrame->data[2], mFrame->pFrame->linesize[2],
-                         mFrame->pFrame->width, mFrame->pFrame->height);
+                         mFrame->data[0], mFrame->linesize[0],
+                         mFrame->data[1], mFrame->linesize[1],
+                         mFrame->data[2], mFrame->linesize[2],
+                         mFrame->width, mFrame->height);
+                 */
+                mWriteFrame =  pFrame;
             }
             
+            
+            
+            //if([self writeFrame:mFrame]!=0)
+            if([self writeFrame:mWriteFrame]!=0)
+                m_bSaveVideo = false;
             
             if(videoFrames.count>1)
             {
                 [videoFrames removeObjectAtIndex:0];
-                av_free(pFrame->data[0]);
-                av_frame_unref(pFrame);
+                av_freep(&(pFrame->data[0]));
                 av_frame_free(&pFrame);
             }
             
         }
         
-        pFrame =mFrame->pFrame;
-        if([self writeFrame:pFrame]!=0)
-            m_bSaveVideo = false;
+        
         T2 =av_gettime()/1000;
         int tt = (int)(T2-T1);
         tt = delay-tt;
@@ -4486,9 +4520,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     [self stopEncodeSession];
     
-    av_free(mFrame->pFrame->data[0]);
-    av_frame_unref(mFrame->pFrame);
-    av_frame_free(&(mFrame->pFrame));
+    av_freep(&(mFrame->data[0]));
+    av_frame_free(&(mFrame));
     
     NSLog(@"Exit Write Frame!!!!");
     while(videoFrames.count>0)
@@ -4496,8 +4529,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         MyFrame = videoFrames[0];
         pFrame = MyFrame->pFrame;
         [videoFrames removeObjectAtIndex:0];
-        av_free(pFrame->data[0]);
-        av_frame_unref(pFrame);
+        av_freep(&(pFrame->data[0]));
         av_frame_free(&pFrame);
     }
     
@@ -4559,7 +4591,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         [defaultManager removeItemAtPath:path error:nil];
         NSLog(@"error : %@",_sAlbumName);
     }
+    
+#endif
     return 0;
+
 }
 
 
@@ -4570,8 +4605,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         for(MyFrame *frame in videoFrames)
         {
             AVFrame *pFrame = frame->pFrame;
-            av_free(pFrame->data[0]);
-            av_frame_unref(pFrame);
+            av_freep(&(pFrame->data[0]));
+            
             av_frame_free(&pFrame);
         }
         [videoFrames removeAllObjects];
@@ -4586,32 +4621,30 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 {
     //AV_PIX_FMT_YUV420P
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
-    
     size_t d = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
     unsigned char* dst = (unsigned char *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0);
-    int hh=0;
-    for(hh=0;hh<h;hh++)
+    int y=0;
+    for(y=0;y<h;y++)
     {
-        memcpy(dst,frame->data[0]+hh*frame->linesize[0],frame->linesize[0]);
+        memcpy(dst,frame->data[0]+y*frame->linesize[0],frame->linesize[0]);
         dst+=d;
     }
-    
     
     d = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
     dst = (unsigned char *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1);
     
     h>>=1;
-    for(hh=0;hh<h;hh++)
+    for(y=0;y<h;y++)
     {
-        memcpy(dst,frame->data[1]+hh*frame->linesize[1],frame->linesize[1]);
+        memcpy(dst,frame->data[1]+y*frame->linesize[1],frame->linesize[1]);
         dst+=d;
     }
     
     d = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 2);
     dst = (unsigned char *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 2);
-    for(hh=0;hh<h;hh++)
+    for(y=0;y<h;y++)
     {
-        memcpy(dst,frame->data[2]+hh*frame->linesize[2],frame->linesize[2]);
+        memcpy(dst,frame->data[2]+y*frame->linesize[2],frame->linesize[2]);
         dst+=d;
     }
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
@@ -4622,7 +4655,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 {
     
     CVPixelBufferRef imageBuffer = [self copyDataFromBuffer:pOutFrame toYUVPixelBufferWithWidth:_nRecordWidth Height:_nRecordHeight];
-    // NSLog(@"fps = %d",nFps);
     CMTime pts = CMTimeMake(_frameCount, nFps);
     CMTime duration = kCMTimeInvalid;
     VTEncodeInfoFlags flags;
@@ -6982,20 +7014,13 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         }
         @synchronized(videoFrames)
         {
-            for(MyFrame *frame in videoFrames)
-            {
-                AVFrame *pFrame = frame->pFrame;
-                av_free(pFrame->data[0]);
-                av_frame_unref(pFrame);
-                av_frame_free(&pFrame);
-            }
             if(videoFrames.count>=5)
             {
                 MyFrame *tempFrame = videoFrames[0];
                 [videoFrames removeObjectAtIndex:0];
-                av_free(tempFrame->pFrame->data[0]);
-                av_frame_unref(tempFrame->pFrame);
+                av_freep(&(tempFrame->pFrame->data[0]));
                 av_frame_free(&(tempFrame->pFrame));
+                
             }
             [videoFrames addObject:mFrame];
         }
@@ -8460,17 +8485,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     self.lastStartCode = [data subdataWithRange:startCodeRange];
 }
 
-
-
-
-
-
-
 -(void)naSetScale:(float)n
 {
     _nScale = n;
-    
 }
+
 
 #pragma mark  解码
 //解码自定义协议传输H264
@@ -8515,6 +8534,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 ret = 0;
 #else
             
+            
+            //av_frame_unref(m_decodedFrame);
             if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
             {
                 if (avcodec_receive_frame(m_codecCtx, m_decodedFrame) != 0) {
@@ -8593,7 +8614,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     
                     
                     
-                    av_free(pFrameYUV->data[0]);
+                    av_freep(&(pFrameYUV->data[0]));
                     av_frame_free(&pFrameYUV);
                     pFrameYUV = av_frame_alloc();
                     
@@ -8662,7 +8683,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
                         memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
                     }
-                    av_free(pFrameYUV_D->data[0]);
+                    av_freep(&(pFrameYUV_D->data[0]));
                     av_frame_free(&pFrameYUV_D);
                 }
                 
@@ -8837,7 +8858,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                       pFrameYUV_D->data[2],pFrameYUV_D->linesize[2],
                                       pFrameYUV_D->width,pFrameYUV_D->height,
                                       kFilterLinear);
-                            av_free(pFrameYUV->data[0]);
+                            av_freep(&(pFrameYUV->data[0]));
                             av_frame_free(&pFrameYUV);
                             pFrameYUV = av_frame_alloc();
                             
@@ -8906,7 +8927,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                 psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
                                 memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
                             }
-                            av_free(pFrameYUV_D->data[0]);
+                            av_freep(&(pFrameYUV_D->data[0]));
                             av_frame_free(&pFrameYUV_D);
                         }
                         
@@ -8943,7 +8964,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                           m_codecCtx->height,
                                           frame_b->data, frame_b->linesize);
                                 
-                                // frame_link2frame(frame_b,pFrameYUV);
                                 [self frame_link2frame:frame_b DES:pFrameYUV];;
                                 [self SaveVideo];
                                 pFrameYUV->key_frame = nKeyFrame;
@@ -9152,7 +9172,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                               pFrameYUV_D->width,pFrameYUV_D->height,
                               kFilterLinear);
                     
-                    av_free(pFrameYUV->data[0]);
+                    av_freep(&(pFrameYUV->data[0]));
                     av_frame_free(&pFrameYUV);
                     pFrameYUV = av_frame_alloc();
                     
@@ -9224,7 +9244,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
                         memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
                     }
-                    av_free(pFrameYUV_D->data[0]);
+                    av_freep(&(pFrameYUV_D->data[0]));
                     av_frame_free(&pFrameYUV_D);
                 }
                 

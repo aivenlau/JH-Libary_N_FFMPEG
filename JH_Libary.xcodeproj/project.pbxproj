@@ -529,6 +529,13 @@
 			path = Reachability;
 			sourceTree = "<group>";
 		};
+		8716E5A4210AB9FE0094CDB0 /* 3.4.2 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = 3.4.2;
+			sourceTree = "<group>";
+		};
 		872F741820B8180400CBBE94 /* lib */ = {
 			isa = PBXGroup;
 			children = (
@@ -689,18 +696,11 @@
 		87D4C9931F74D4370037A769 /* FFmpeg_iOS */ = {
 			isa = PBXGroup;
 			children = (
-				87D4C9941F74D4370037A769 /* 3.3.3 */,
+				8716E5A4210AB9FE0094CDB0 /* 3.4.2 */,
 				87D4C9951F74D4370037A769 /* include */,
 				87D4CA061F74D4380037A769 /* lib */,
 			);
 			path = FFmpeg_iOS;
-			sourceTree = "<group>";
-		};
-		87D4C9941F74D4370037A769 /* 3.3.3 */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = 3.3.3;
 			sourceTree = "<group>";
 		};
 		87D4C9951F74D4370037A769 /* include */ = {
