@@ -145,6 +145,7 @@ typedef enum
 -(BOOL)naGetConnected;  //是否连上模块
 
 -(void)naSetRecordAudio:(BOOL)bGAudio;  //录像是否录入声音
+-(void)naSetDispStyle:(int)nStyle;
 
 
 

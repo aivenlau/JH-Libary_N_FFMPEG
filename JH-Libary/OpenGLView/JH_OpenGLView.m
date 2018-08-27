@@ -68,6 +68,8 @@ enum TextureType
     
     CGSize     bounds_size;
     
+    GLuint nDispType;
+    
 #ifdef DEBUG
     struct timeval      _time;
     NSInteger           _frameRate;
@@ -78,6 +80,15 @@ enum TextureType
 
 @property  (assign,nonatomic)  GLsizei                 viewScale;
 
+/*
+ *   0 正常
+ *   1 黑白
+ *   2 淡红
+ *   3 淡黄
+ *   4 淡绿
+ *   5 褐色
+ *   6 淡蓝
+ */
 /** 
  初始化YUV纹理
  */
@@ -131,6 +142,7 @@ enum TextureType
 
 - (BOOL)doInit
 {
+    _nDispStyle = 0;
     _nRota = 0;
     CAEAGLLayer *eaglLayer = (CAEAGLLayer*) self.layer;
     eaglLayer.opaque = YES;
@@ -151,9 +163,12 @@ enum TextureType
     GLuint textureUniformY = glGetUniformLocation(_program, "SamplerY");
     GLuint textureUniformU = glGetUniformLocation(_program, "SamplerU");
     GLuint textureUniformV = glGetUniformLocation(_program, "SamplerV");
+    nDispType =glGetUniformLocation(_program, "nDislplay");
     glUniform1i(textureUniformY, 0);
     glUniform1i(textureUniformU, 1);
     glUniform1i(textureUniformV, 2);
+    
+    
     return YES;
 }
 
@@ -400,25 +415,120 @@ enum TextureType
  gl_FragColor = vec4(rgb, 1); \
  \
  */
-
+#if 0
 #define FSH @"precision mediump float;\
 varying lowp vec2 TexCoordOut;\
-\
 uniform sampler2D SamplerY;\
 uniform sampler2D SamplerU;\
 uniform sampler2D SamplerV;\
+uniform int  nDislplay;\
+void modifyColor(vec4 color)\
+{\
+    color.r=max(min(color.r,1.0),0.0);\
+    color.g=max(min(color.g,1.0),0.0);\
+    color.b=max(min(color.b,1.0),0.0);\
+    color.a=max(min(color.a,1.0),0.0);\
+}\
 \
 void main(void)\
 {\
     float y = texture2D(SamplerY, TexCoordOut).r; \
     float u = texture2D(SamplerU, TexCoordOut).r; \
     float v = texture2D(SamplerV, TexCoordOut).r; \
+    if(nDislplay==1) {\
+        u = 0.5;\
+        v = 0.5;\
+    }\
     vec3 yuv = vec3(y, u, v); \
     vec3 offset = vec3(16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0); \
     mat3 mtr = mat3(1.0, 1.0, 1.0, -0.000, -0.344, 1.772, 1.402, -0.714, 0.00); \
     vec4 curColor = vec4(mtr * (yuv - offset), 1); \
-    gl_FragColor = curColor; \
+    vec4 mask = vec4(0.0,0.0,0.0,0.0);\
+    if(nDislplay==2)\
+    {\
+        mask = vec4(1.0,0.0,0.0,0.21); //淡红\
+    }\
+    else if(nDislplay==3)\
+    {\
+        mask = vec4(1.0,1.0,0.0,0.2); //淡黄\
+    }\
+    else if(nDislplay==4)\
+    {\
+        mask = vec4(0.0,1.0,0.0,0.2); //淡绿\
+    }\
+    else if(nDislplay==5)\
+    {\
+        mask = vec4(128.0/256.0, 69.0/256.0, 9.0/256.0, 0.5); //褐色\
+    }\
+    else if(nDislplay==6)\
+    {\
+        mask = vec4(0.0, 0.0, 1.0, 0.20); //淡蓝\
+    }\
+    float r = mask.a*mask.r+(1.0-mask.a)*curColor.r;\
+    float g = mask.a*mask.g+(1.0-mask.a)*curColor.g;\
+    float b = mask.a*mask.b+(1.0-mask.a)*curColor.b;\
+    vec4 color1 = vec4(r,g,b,1.0);\
+    modifyColor(color1);\
+    gl_FragColor=color1;\
 }"
+#else
+
+#define FSH @"precision mediump float;\
+    varying lowp vec2 TexCoordOut;\
+    uniform sampler2D SamplerY;\
+    uniform sampler2D SamplerU;\
+    uniform sampler2D SamplerV;\
+    uniform int  nDislplay;\
+    void modifyColor(vec4 color)\
+    {\
+        color.r=max(min(color.r,1.0),0.0);\
+        color.g=max(min(color.g,1.0),0.0);\
+        color.b=max(min(color.b,1.0),0.0);\
+        color.a=max(min(color.a,1.0),0.0);\
+    }\
+    void main(void)\
+    {\
+    float y = texture2D(SamplerY, TexCoordOut).r; \
+    float u = texture2D(SamplerU, TexCoordOut).r; \
+    float v = texture2D(SamplerV, TexCoordOut).r; \
+    if(nDislplay==1)\
+    {\
+        u=0.5;\
+        v=0.5;\
+    }\
+    vec3 yuv = vec3(y, u, v); \
+    vec3 offset = vec3(16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0); \
+    mat3 mtr = mat3(1.0, 1.0, 1.0, -0.000, -0.344, 1.772, 1.402, -0.714, 0.00); \
+    vec4 curColor = vec4(mtr * (yuv - offset), 1); \
+    vec4 mask = vec4(0.0,0.0,0.0,0.0);\
+    if(nDislplay==2)\
+    {\
+        mask = vec4(1.0,0.0,0.0,0.21);\
+    }\
+    else if(nDislplay==3)\
+    {\
+        mask = vec4(1.0,1.0,0.0,0.2);\
+    }\
+    else if(nDislplay==4)\
+    {\
+        mask = vec4(0.0,1.0,0.0,0.2);\
+    }\
+    else if(nDislplay==5)\
+    {\
+        mask = vec4(128.0/256.0, 69.0/256.0, 9.0/256.0, 0.5);\
+    }\
+    else if(nDislplay==6)\
+    {\
+        mask = vec4(0.0, 0.0, 1.0, 0.20); \
+    }\
+    float r = mask.a*mask.r+(1.0-mask.a)*curColor.r;\
+    float g = mask.a*mask.g+(1.0-mask.a)*curColor.g;\
+    float b = mask.a*mask.b+(1.0-mask.a)*curColor.b;\
+    vec4 color1 = vec4(r,g,b,1.0);\
+    modifyColor(color1);\
+    gl_FragColor=color1;\
+}"
+#endif
 
 #define VSH @"attribute vec4 position;\
 attribute vec2 TexCoordIn;\
@@ -543,6 +653,7 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
         glGetShaderInfoLog(shaderHandle, sizeof(messages), 0, &messages[0]);
         NSString *messageString = [NSString stringWithUTF8String:messages];
         NSLog(@"%@", messageString);
+        NSLog(@"Load error!");
         exit(1);
     }
     return shaderHandle;
@@ -584,7 +695,8 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h);
         
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXV]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h * 5 / 4);        
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h * 5 / 4);
+        glUniform1i(nDispType, _nDispStyle);
         [self render];
     }
     

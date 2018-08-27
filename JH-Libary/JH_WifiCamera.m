@@ -465,6 +465,14 @@
 @end
 
 
+typedef struct
+{
+    uint8  r;
+    uint8  g;
+    uint8  b;
+    uint8  a;
+}RGBA_STRUCT;
+
 
 @implementation JH_WifiCamera
 
@@ -1417,6 +1425,11 @@ static   int   interrupt_cb( void   *para)
 - (void)displayDecodedFrame:(CVImageBufferRef )imageBuffer
 {
     
+}
+
+-(void)naSetDispStyle:(int)nStyle
+{
+    self.dispView.nDispStyle = nStyle;
 }
 
 #pragma mark -  H264编码回调  H264HwEncoderImplDelegate
@@ -3624,7 +3637,7 @@ static   int   interrupt_cb( void   *para)
  des->key_frame = src->key_frame;
  }
  */
--(UIImage *)YUVtoUIImage:(AVFrame *)myframe1{
+-(UIImage *)YUVtoUIImage:(AVFrame *)myframe1 SAVE:(BOOL)bsave{
     
     int w = myframe1->width;
     int h = myframe1->height;
@@ -3632,6 +3645,99 @@ static   int   interrupt_cb( void   *para)
     myframe->width=w;
     myframe->height=h;
     av_image_alloc(myframe->data, myframe->linesize, w,h,AV_PIX_FMT_YUV420P,4);
+    
+    if(bsave && self.dispView && self.dispView.nDispStyle !=0)
+    {
+        uint8 *pbufferA =(uint8 *) malloc(w*4*h);
+        uint8 *pbuffer = pbufferA;
+        memset(pbuffer,0,w*4*h);
+        I420ToABGR(myframe1->data[0], myframe1->linesize[0],
+                   myframe1->data[1], myframe1->linesize[1],
+                   myframe1->data[2], myframe1->linesize[2],
+                   pbuffer,w*4,
+                   w,h);
+        RGBA_STRUCT df = {0,0,0,0};
+        int nDispStyle = self.dispView.nDispStyle;
+        {
+            int r,g,b;
+            if (nDispStyle == 2) {
+                df.r = 255;
+                df.g = 0;
+                df.b = 0;
+                df.a = 20; //= {255, 0, 0, 20};
+            } else if (nDispStyle == 3) {
+                df.r = 255;
+                df.g = 255;
+                df.b = 0;
+                df.a = 20; // {255, 255, 0, 20};
+            } else if (nDispStyle == 4) {
+                df.r = 0;
+                df.g = 255;
+                df.b = 0;
+                df.a = 20; // {0, 255, 0, 20};
+            } else if (nDispStyle == 5) {
+                df.r = 128;
+                df.g = 69;
+                df.b = 9;
+                df.a = 50; // {128, 69, 9, 50};
+            }
+            else if (nDispStyle == 6) {
+                df.r = 0;
+                df.g = 0;
+                df.b = 255;
+                df.a = 20; //{0, 0, 255, 20};
+            }
+            
+            RGBA_STRUCT *buffer;
+            uint8 dat =0;
+            float ap = df.a/100.0f;
+            for(int y=0;y<h;y++)
+            {
+                for(int x=0;x<w;x++)
+                {
+                    buffer =(RGBA_STRUCT *)pbuffer;
+                    if(nDispStyle==1)
+                    {
+                        dat =(uint8) (((*buffer).r*38 + (*buffer).g*75 + (*buffer).b*15) >> 7);
+                        (*buffer).r = dat;
+                        (*buffer).g = dat;
+                        (*buffer).b = dat;
+                    }
+                    else {
+                        
+                        r = (int) (ap * df.r + (1 - ap) * (*buffer).r);
+                        g = (int) (ap * df.g + (1 - ap) * (*buffer).g);
+                        b = (int) (ap * df.b + (1 - ap) * (*buffer).b);
+                        
+                        if(r>255)
+                        r = 255;
+                        if(r<0)
+                        r=0;
+                        if(g>255)
+                        g = 255;
+                        if(g<0)
+                        g=0;
+                        if(b>255)
+                        b = 255;
+                        if(b<0)
+                        b=0;
+                        (*buffer).r = (uint8)r;
+                        (*buffer).g = (uint8)g;
+                        (*buffer).b = (uint8)b;
+                    }
+                    pbuffer+=4;
+                }
+            }
+            pbuffer = pbufferA;
+            ABGRToI420((uint8_t *) pbuffer, myframe1->width * 4,
+                                     myframe1->data[0], myframe1->linesize[0],
+                                     myframe1->data[1], myframe1->linesize[1],
+                                     myframe1->data[2], myframe1->linesize[2],
+                                     myframe1->width, myframe1->height);
+            
+        }
+        free(pbufferA);
+    }
     
     I420ToNV12(myframe1->data[0], myframe1->linesize[0],
                myframe1->data[1], myframe1->linesize[1],
@@ -3704,7 +3810,7 @@ static   int   interrupt_cb( void   *para)
         {
             self.bSaveCompelete = NO;
             
-            myimage = [self YUVtoUIImage:tmpFrame1];
+            myimage = [self YUVtoUIImage:tmpFrame1 SAVE:YES];
             if(myimage)
             {
                 
@@ -3746,7 +3852,7 @@ static   int   interrupt_cb( void   *para)
         {
             if(myimage==nil)
             {
-                myimage = [self YUVtoUIImage:tmpFrame1];
+                myimage = [self YUVtoUIImage:tmpFrame1 SAVE:NO];
             }
             self.imgSNT =myimage;
         }
@@ -3819,7 +3925,7 @@ static   int   interrupt_cb( void   *para)
     
     if([self.delegate respondsToSelector:@selector(ReceiveImg:)])
     {
-        [self.delegate ReceiveImg: [self YUVtoUIImage:frame]];
+        [self.delegate ReceiveImg: [self YUVtoUIImage:frame SAVE:NO]];
         return 0;
     }
     
@@ -3837,7 +3943,7 @@ static   int   interrupt_cb( void   *para)
 #if 0
     if([self.delegate respondsToSelector:@selector(ReceiveImg:)])
     {
-        [self.delegate ReceiveImg: [self YUVtoUIImage:frame]];
+        [self.delegate ReceiveImg: [self YUVtoUIImage:frame SAVE:NO]];
     }
 #endif
     if(self.bNeedSave2Photo)

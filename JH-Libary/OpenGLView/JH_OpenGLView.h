@@ -15,6 +15,7 @@
 {
 	
 }
+@property  (assign,nonatomic)  int              nDispStyle;
 #pragma mark  ----- ----
 - (void)displayYUV420pData:(void *)data width:(NSInteger)w height:(NSInteger)h;
 - (void)clearFrame;
