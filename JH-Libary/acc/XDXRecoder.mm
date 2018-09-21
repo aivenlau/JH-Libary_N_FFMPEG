@@ -27,20 +27,22 @@
 float   g_avtimfdiff = 0;
 Float64 g_vstarttime = 0.0;
 #define kXDXAnyWhereVoiceDemoPathComponent  "VoiceDemo"
-#define kBufferDurationSeconds              .5
+#define kBufferDurationSeconds              0.5f
 #define kXDXRecoderAudioBytesPerPacket      2
 #define kXDXRecoderAACFramesPerPacket       1024
 #define kXDXRecoderPCMTotalPacket           512
 #define kXDXRecoderPCMFramesPerPacket       1
-#define kXDXRecoderConverterEncodeBitRate   128000
-#define kXDXAudioSampleRate                 44100.0
-#define kChanels                     2
+#define kXDXRecoderConverterEncodeBitRate   96000
+#define kXDXAudioSampleRate                 44100
+#define kChanels                            2
 #define kTVURecoderPCMMaxBuffSize           (2048*kChanels)
 
 
+#define buf_Lenb    (kTVURecoderPCMMaxBuffSize*20)
+
 // Audio Unit Set Property
-#define INPUT_BUS  1      ///< A I/O unit's bus 1 connects to input hardware (microphone).
-#define OUTPUT_BUS 0      ///< A I/O unit's bus 0 connects to output hardware (speaker).
+#define INPUT_BUS  1        ///< A I/O unit's bus 1 connects to input hardware (microphone).
+#define OUTPUT_BUS 0        ///< A I/O unit's bus 0 connects to output hardware (speaker).
 
 //voice memos Macro
 #ifdef __XDX_VICE_FEATURE__
@@ -56,7 +58,7 @@ AudioStreamBasicDescription     _targetDes;                 ///< destination for
 AudioBufferList* convertPCMToAAC (XDXRecorder *recoder);
 
 static int          pcm_buffer_size = 0;
-static uint8_t      pcm_buffer[kTVURecoderPCMMaxBuffSize*2];
+static uint8_t      pcm_buffer[buf_Lenb];
 
 //static int          catchCount = 0;
 //static float        firstTime  = 0;
@@ -68,6 +70,7 @@ enum ChannelCount
     k_Stereo
 };
 
+#if 0
 void caculate_bm_db(void * const data ,size_t length ,int64_t timestamp, ChannelCount channelModel,float channelValue[2],bool isAudioUnit) {
     int16_t *audioData = (int16_t *)data;
     
@@ -96,20 +99,25 @@ void caculate_bm_db(void * const data ,size_t length ,int64_t timestamp, Channel
         
         channelValue[0] = channelValue[1] = sDbChnnel;
         
-    } else if (channelModel == k_Stereo){
+    }
+    else if (channelModel == k_Stereo)
+    {
         int sDbChA = 0;
         int sDbChB = 0;
         
         int16_t nCurr[2] = {0};
         int16_t nMax[2] = {0};
         
-        for(unsigned int i=0; i<length/2; i++) {
+        for(unsigned int i=0; i<length/2; i++)
+        {
             nCurr[0] = audioData[i];
             nCurr[1] = audioData[i + 1];
             
-            if(nMax[0] < nCurr[0]) nMax[0] = nCurr[0];
+            if(nMax[0] < nCurr[0])
+                nMax[0] = nCurr[0];
             
-            if(nMax[1] < nCurr[1]) nMax[1] = nCurr[0];
+            if(nMax[1] < nCurr[1])
+                nMax[1] = nCurr[0];
         }
         
         if(nMax[0] < 1) {
@@ -128,9 +136,11 @@ void caculate_bm_db(void * const data ,size_t length ,int64_t timestamp, Channel
         channelValue[1] = sDbChB;
     }
 }
-
+#endif
 
 #pragma mark ---------------------------------- CallBack : collect pcm and  convert  -------------------------------------
+
+
 OSStatus encodeConverterComplexInputDataProc(AudioConverterRef              inAudioConverter,
                                              UInt32                         *ioNumberDataPackets,
                                              AudioBufferList                *ioData,
@@ -138,11 +148,16 @@ OSStatus encodeConverterComplexInputDataProc(AudioConverterRef              inAu
                                              void                           *inUserData) {
     
     ioData->mBuffers[0].mData           = inUserData;
-    ioData->mBuffers[0].mNumberChannels = _targetDes.mChannelsPerFrame;
-    ioData->mBuffers[0].mDataByteSize   = kXDXRecoderAACFramesPerPacket * kXDXRecoderAudioBytesPerPacket * _targetDes.mChannelsPerFrame;
+    ioData->mBuffers[0].mNumberChannels = kChanels;//_targetDes.mChannelsPerFrame;
+    ioData->mBuffers[0].mDataByteSize   = kXDXRecoderAACFramesPerPacket * kXDXRecoderAudioBytesPerPacket * kChanels;//_targetDes.mChannelsPerFrame;
     
     return 0;
 }
+
+
+
+UInt32 nMax = 0;
+
 
 // PCM -> AAC
 AudioBufferList* convertPCMToAAC (XDXRecorder *recoder) {
@@ -150,17 +165,20 @@ AudioBufferList* convertPCMToAAC (XDXRecorder *recoder) {
     UInt32   maxPacketSize    = 0;
     UInt32   size             = sizeof(maxPacketSize);
     OSStatus status;
-    
-    status = AudioConverterGetProperty(_encodeConvertRef,
+    if(nMax==0)
+    {
+        status = AudioConverterGetProperty(_encodeConvertRef,
                                        kAudioConverterPropertyMaximumOutputPacketSize,
                                        &size,
                                        &maxPacketSize);
+        nMax = maxPacketSize;
+    }
     //    log4cplus_info("AudioConverter","kAudioConverterPropertyMaximumOutputPacketSize status:%d \n",(int)status);
     
     AudioBufferList *bufferList             = (AudioBufferList *)malloc(sizeof(AudioBufferList));
     bufferList->mNumberBuffers              = 1;
     bufferList->mBuffers[0].mNumberChannels = _targetDes.mChannelsPerFrame;
-    bufferList->mBuffers[0].mData           = malloc(maxPacketSize);
+    bufferList->mBuffers[0].mData           = malloc(nMax);
     bufferList->mBuffers[0].mDataByteSize   = kTVURecoderPCMMaxBuffSize;
     
     AudioStreamPacketDescription outputPacketDescriptions;
@@ -177,27 +195,10 @@ AudioBufferList* convertPCMToAAC (XDXRecorder *recoder) {
                                              &outputPacketDescriptions);
 
     if(status != noErr){
-//        log4cplus_debug("Audio Recoder","set AudioConverterFillComplexBuffer status:%d inNumPackets:%d \n",(int)status, inNumPackets);
         free(bufferList->mBuffers[0].mData);
         free(bufferList);
         return NULL;
     }
-    
-    if (recoder.needsVoiceDemo) {
-        // if inNumPackets set not correct, file will not normally play. 将转换器转换出来的包写入文件中，inNumPackets表示写入文件的起始位置
-        OSStatus status = AudioFileWritePackets(recoder.mRecordFile,
-                                                FALSE,
-                                                bufferList->mBuffers[0].mDataByteSize,
-                                                &outputPacketDescriptions,
-                                                recoder.mRecordPacket,
-                                                &inNumPackets,
-                                                bufferList->mBuffers[0].mData);
-        //        log4cplus_info("write file","write file status = %d",(int)status);
-        if (status == noErr) {
-            recoder.mRecordPacket += inNumPackets;  // 用于记录起始位置
-        }
-    }
-    
     return bufferList;
 }
 
@@ -208,11 +209,11 @@ static OSStatus RecordCallback(void *inRefCon,
                                UInt32 inBusNumber,
                                UInt32 inNumberFrames,
                                AudioBufferList *ioData) {
-/*
-    注意：如果采集的数据是PCM需要将dataFormat.mFramesPerPacket设置为1，而本例中最终要的数据为AAC,因为本例中使用的转换器只有每次传入1024帧才能开始工作,所以在AAC格式下需要将mFramesPerPacket设置为1024.
- 也就是采集到的inNumPackets为1，在转换器中传入的inNumPackets应该为AAC格式下默认的1，在此后写入文件中也应该传的是转换好的inNumPackets,
- 如果有特殊需求需要将采集的数据量小于1024,那么需要将每次捕捉到的数据先预先存储在一个buffer中,等到攒够1024帧再进行转换。
- */
+    /*
+     注意：如果采集的数据是PCM需要将dataFormat.mFramesPerPacket设置为1，而本例中最终要的数据为AAC,因为本例中使用的转换器只有每次传入1024帧才能开始工作,所以在AAC格式下需要将mFramesPerPacket设置为1024.
+     也就是采集到的inNumPackets为1，在转换器中传入的inNumPackets应该为AAC格式下默认的1，在此后写入文件中也应该传的是转换好的inNumPackets,
+     如果有特殊需求需要将采集的数据量小于1024,那么需要将每次捕捉到的数据先预先存储在一个buffer中,等到攒够1024帧再进行转换。
+     */
     
     XDXRecorder *recorder = (__bridge XDXRecorder *)inRefCon;
     // 将回调数据传给_buffList
@@ -220,38 +221,40 @@ static OSStatus RecordCallback(void *inRefCon,
     
     void    *bufferData = recorder->_buffList->mBuffers[0].mData;
     UInt32   bufferSize = recorder->_buffList->mBuffers[0].mDataByteSize;
-    
-    float channelValue[2];
-    int kk = kChanels;
-    if(kk==2)
+
+#if 0
+    if(bufferSize>0)
     {
-        caculate_bm_db(bufferData, bufferSize, 0, k_Stereo, channelValue,true);
+        NSData *pdat = [NSData dataWithBytes:bufferData length:bufferSize];
+        [recorder->audioFileHandle writeData:pdat];
     }
-    else
-    {
-        caculate_bm_db(bufferData, bufferSize, 0, k_Mono, channelValue,true);
-    }
-    //
-    
-    recorder.volLDB = channelValue[0];
-    recorder.volRDB = channelValue[1];
+#endif
     // 由于PCM转成AAC的转换器每次需要有1024个采样点（每一帧2个字节*kChanel）才能完成一次转换，所以每次需要2048*kChanels大小的数据，这里定义的pcm_buffer用来累加每次存储的bufferData
     memcpy(pcm_buffer+pcm_buffer_size, bufferData, bufferSize);
     pcm_buffer_size = pcm_buffer_size + bufferSize;
     
     if(pcm_buffer_size >= kTVURecoderPCMMaxBuffSize) {
         AudioBufferList *bufferList = convertPCMToAAC(recorder);
-        // 因为采样不可能每次都精准的采集到1024个样点，所以如果大于2048大小就先填满2048，剩下的跟着下一次采集一起送给转换器
+        //因为采样不可能每次都精准的采集到1024个样点，所以如果大于2048*nchanel大小就先填满2048*nchanel，剩下的跟着下一次采集一起送给转换器
         memcpy(pcm_buffer, pcm_buffer + kTVURecoderPCMMaxBuffSize, pcm_buffer_size - kTVURecoderPCMMaxBuffSize);
         pcm_buffer_size = pcm_buffer_size - kTVURecoderPCMMaxBuffSize;
-        
         if(bufferList)
-        {         
-            NSData *data = [NSData dataWithBytes:bufferList->mBuffers[0].mData length:bufferList->mBuffers[0].mDataByteSize];
-            if(recorder.delegate)
+        {
             {
-                if(data)
-                    [recorder.delegate ReceiveAAC_Data:data];
+
+                
+                NSData *data = [NSData dataWithBytes:((UInt8 *)bufferList->mBuffers[0].mData) length:bufferList->mBuffers[0].mDataByteSize];
+#if 0
+                NSData *adtsHeader = [recorder adtsDataForPacketLength:bufferList->mBuffers[0].mDataByteSize];
+                NSMutableData *fullData = [NSMutableData dataWithData:adtsHeader];
+                [fullData appendData:data];
+                [recorder->audioFileHandle writeData:fullData];
+#endif
+                if(recorder.delegate)
+                {
+                    if(data)
+                        [recorder.delegate ReceiveAAC_Data:data];
+                }
             }
             free(bufferList->mBuffers[0].mData);
             free(bufferList);
@@ -318,30 +321,16 @@ static OSStatus RecordCallback(void *inRefCon,
     
     memset(&dataFormat, 0, sizeof(dataFormat));
     dataFormat.mSampleRate = kXDXAudioSampleRate;
-    
-    /*
-    UInt32 size = sizeof(dataFormat.mSampleRate);
-    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareSampleRate,
-                            &size,
-                            &dataFormat.mSampleRate);
-    
-    
-    
-     size = sizeof(dataFormat.mChannelsPerFrame);
-    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareInputNumberChannels,
-                            &size,
-                            &dataFormat.mChannelsPerFrame);
-    */
     dataFormat.mFormatID = formatID;
     dataFormat.mChannelsPerFrame = kChanels;
-    
     if (formatID == kAudioFormatLinearPCM) {
-        {
+        {            
             dataFormat.mFormatFlags     = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
         }
         dataFormat.mBitsPerChannel  = 16;
-        dataFormat.mBytesPerPacket  = dataFormat.mBytesPerFrame = (dataFormat.mBitsPerChannel / 8) * dataFormat.mChannelsPerFrame;
-        dataFormat.mFramesPerPacket = kXDXRecoderPCMFramesPerPacket; // 用AudioQueue采集pcm需要这么设置
+        dataFormat.mFramesPerPacket = kXDXRecoderPCMFramesPerPacket;
+        dataFormat.mBytesPerFrame = (dataFormat.mBitsPerChannel / 8) * dataFormat.mChannelsPerFrame;
+        dataFormat.mBytesPerPacket  = dataFormat.mBytesPerFrame*dataFormat.mFramesPerPacket;
     }
 }
 
@@ -382,19 +371,22 @@ static OSStatus RecordCallback(void *inRefCon,
 
 // Transcoder basic information settings,转码器基本信息设置
 - (NSString *)convertBasicSetting {
-    // 此处目标格式其他参数均为默认，系统会自动计算，否则无法进入encodeConverterComplexInputDataProc回调
-    AudioStreamBasicDescription sourceDes = dataFormat;
+    AudioStreamBasicDescription sourceDes;
     AudioStreamBasicDescription targetDes;
-    
+    memcpy(&sourceDes, &dataFormat, sizeof(sourceDes));
     memset(&targetDes, 0, sizeof(targetDes));
-    targetDes.mFormatID                   = kAudioFormatMPEG4AAC;
     targetDes.mSampleRate                 = kXDXAudioSampleRate;
+    targetDes.mFormatID                   = kAudioFormatMPEG4AAC;
+    targetDes.mFormatFlags                = kMPEG4Object_AAC_LC;
+    targetDes.mBytesPerPacket             = 0;         // 每一个packet的音频数据大小。如果的动态大小，设置为0。动态大小的格式，需要用AudioStreamPacketDescription 来确定每个packet的大小。
+    targetDes.mFramesPerPacket            = kXDXRecoderAACFramesPerPacket;// 每个packet的帧数。如果是未压缩的音频数据，值是1。动态码率格式，这个值是一个较大的固定数字，比如说AAC的1024。如果是动态大小帧数（比如Ogg格式）设置为0。
+    targetDes.mBytesPerFrame              = 0;  //  每帧的大小。每一帧的起始点到下一帧的起始点。如果是压缩格式，设置为0 。
     targetDes.mChannelsPerFrame           = dataFormat.mChannelsPerFrame;
-    targetDes.mFramesPerPacket            = kXDXRecoderAACFramesPerPacket;
+    targetDes.mBitsPerChannel             = 0; // 压缩格式设置为0
+    targetDes.mReserved = 0;               // 8字节对齐，填0.
     
-    OSStatus status     = 0;
     UInt32 targetSize   = sizeof(targetDes);
-    status              = AudioFormatGetProperty(kAudioFormatProperty_FormatInfo, 0, NULL, &targetSize, &targetDes);
+    OSStatus status     = 0;
     
     memset(&_targetDes, 0, sizeof(_targetDes));
     memcpy(&_targetDes, &targetDes, targetSize);
@@ -435,6 +427,8 @@ static OSStatus RecordCallback(void *inRefCon,
     status          = AudioConverterGetProperty(_encodeConvertRef, kAudioConverterCurrentInputStreamDescription, &targetSize, &sourceDes);
     targetSize      = sizeof(targetDes);
     status          = AudioConverterGetProperty(_encodeConvertRef, kAudioConverterCurrentOutputStreamDescription, &targetSize, &targetDes);
+    
+    
     // 设置码率，需要和采样率对应
     UInt32 bitRate  = kXDXRecoderConverterEncodeBitRate;
     targetSize      = sizeof(bitRate);
@@ -447,6 +441,7 @@ static OSStatus RecordCallback(void *inRefCon,
         return @"Error : Set covert property bit rate failed";
     }
     
+    
     return nil;
 }
 
@@ -457,7 +452,6 @@ static OSStatus RecordCallback(void *inRefCon,
     if (self = [super init]) {
         isRunning = NO;
         mNeedsVoiceDemo = NO;
-        if (self.releaseMethod == XDXRecorderReleaseMethodAudioUnit)
         {
             [self initAudioComponent];
             [self setAudioUnitPropertyAndFormat];
@@ -476,17 +470,21 @@ static OSStatus RecordCallback(void *inRefCon,
 
 #pragma mark - AudioUnit
 - (void)startAudioUnitRecorder {
+    nMax = 0;
     OSStatus status;
     if (isRunning) {
-
         NSLog(@"Start Audio Unit recorder repeat");
         return;
     }
-    
+#if 0
+    NSString *audioFile = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"abc.aac"];
+    [[NSFileManager defaultManager] removeItemAtPath:audioFile error:nil];
+    [[NSFileManager defaultManager] createFileAtPath:audioFile contents:nil attributes:nil];
+    audioFileHandle = [NSFileHandle fileHandleForWritingAtPath:audioFile];
+#endif
     [self initGlobalVar];
     status = AudioOutputUnitStart(_audioUnit);
     NSLog(@"AudioOutputUnitStart status : %d \n",(int)status);
-    
     if (status == noErr) {
         isRunning  = YES;
         hostTime   = 0;
@@ -506,11 +504,40 @@ static OSStatus RecordCallback(void *inRefCon,
     }
     //AudioFileClose(mRecordFile);
     g_avtimfdiff = 0;
+#if 0
+    [audioFileHandle closeFile];
+    audioFileHandle = NULL;
+#endif
+    
 }
 
+
+- (NSData*)adtsDataForPacketLength:(NSUInteger)packetLength
+{
+    int adtsLength = 7;
+    char *packet =(char *)malloc(sizeof(char) * adtsLength);
+    // Variables Recycled by addADTStoPacket
+    int profile = 2;  //AAC LC
+    //39=MediaCodecInfo.CodecProfileLevel.AACObjectELD;
+    int freqIdx = 4;  //44.1KHz
+    int chanCfg = kChanels;  //MPEG-4 Audio Channel Configuration. 1 Channel front-center
+    NSUInteger fullLength = adtsLength + packetLength;
+    // fill in ADTS data
+    packet[0] = (char)0xFF; // 11111111     = syncword
+    packet[1] = (char)0xF9; // 1111 1 00 1  = syncword MPEG-2 Layer CRC
+    packet[2] = (char)(((profile-1)<<6) + (freqIdx<<2) +(chanCfg>>2));
+    packet[3] = (char)(((chanCfg&3)<<6) + (fullLength>>11));
+    packet[4] = (char)((fullLength&0x7FF) >> 3);
+    packet[5] = (char)(((fullLength&7)<<5) + 0x1F);
+    packet[6] = (char)0xFC;
+    NSData *data = [NSData dataWithBytesNoCopy:packet length:adtsLength freeWhenDone:YES];
+    return data;
+}
+
+
+
 - (void)initGlobalVar {
-    // 初始化pcm_buffer，pcm_buffer是存储每次捕获的PCM数据，因为PCM若要转成AAC需要攒够2048个字节给转换器才能完成一次转换，Reset pcm_buffer to save convert handle
-    memset(pcm_buffer, 0, pcm_buffer_size);
+    memset(pcm_buffer, 0, sizeof(uint8_t)*(buf_Lenb));
     pcm_buffer_size = 0;
 }
 
@@ -539,7 +566,7 @@ static OSStatus RecordCallback(void *inRefCon,
     AudioComponentDescription audioDesc;
     audioDesc.componentType         = kAudioUnitType_Output;
     // 如果你的应用程序需要去除回声将componentSubType设置为kAudioUnitSubType_VoiceProcessingIO，否则根据需求设置为其他，在博客中有介绍
-    audioDesc.componentSubType      = kAudioUnitSubType_RemoteIO;//kAudioUnitSubType_RemoteIO;//kAudioUnitSubType_VoiceProcessingIO;
+    audioDesc.componentSubType      = kAudioUnitSubType_RemoteIO;    //kAudioUnitSubType_RemoteIO;//kAudioUnitSubType_VoiceProcessingIO;
     // 苹果自己的标志
     audioDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
     audioDesc.componentFlags        = 0;
@@ -578,14 +605,17 @@ static OSStatus RecordCallback(void *inRefCon,
 //        log4cplus_info("Audio Recoder", "couldn't set the input client format on AURemoteIO, status : %d \n",status);
         NSLog(@"couldn't set the input client format on AURemoteIO, status : %d \n",(int)status);
     }
+    
     // 去除回声开关
-    UInt32 echoCancellation =0;
+    /*
+    UInt32 echoCancellation = 0;
     AudioUnitSetProperty(_audioUnit,
                          kAUVoiceIOProperty_BypassVoiceProcessing,
                          kAudioUnitScope_Global,
                          0,
                          &echoCancellation,
                          sizeof(echoCancellation));
+     */
     
     // AudioUnit输入端默认是关闭，需要将他打开
     UInt32 flag = 1;
@@ -595,6 +625,7 @@ static OSStatus RecordCallback(void *inRefCon,
                                        INPUT_BUS,
                                        &flag,
                                        sizeof(flag));
+    
     
     flag = 0;
     AudioUnitSetProperty(_audioUnit,
@@ -644,6 +675,8 @@ static OSStatus RecordCallback(void *inRefCon,
         free(_buffList);
     }
     //[super dealloc];
+    
+    NSLog(@"recorder dealloc!!!!!!");
     
 }
 

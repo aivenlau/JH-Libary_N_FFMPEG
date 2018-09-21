@@ -6,8 +6,11 @@
 //
 //
 
+#import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
+
 
 #define kNumberQueueBuffers 3
 
@@ -53,6 +56,8 @@ typedef NS_ENUM(NSInteger, XDXRecorderReleaseMethod) {
     @public
     AudioUnit                        _audioUnit;
     AudioBufferList                 *_buffList;
+    
+    //NSFileHandle                    *audioFileHandle;
 }
 
 @property (nonatomic ,weak)       id<ReceivedAACData_Delegate>          delegate;
@@ -85,6 +90,8 @@ typedef NS_ENUM(NSInteger, XDXRecorderReleaseMethod) {
 // AudioQueue
 //- (void)startAudioQueueRecorder;
 //- (void)stopAudioQueueRecorder;
+
+-(NSData*)adtsDataForPacketLength:(NSUInteger)packetLength;
 
 
 // AudioUnit

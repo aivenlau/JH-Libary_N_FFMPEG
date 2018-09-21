@@ -462,6 +462,10 @@
 
 
 @property (assign,nonatomic)  BOOL bWhite;
+
+@property (strong,nonatomic)  ALAssetsLibrary *assetsLibrary;
+
+
 @end
 
 
@@ -979,17 +983,6 @@ typedef struct
         return [self F_RecGP:sPath  SaveTyoe:nType Destination:dest];
     }
     
-    /*
-     if(self.nIC_Type == IC_GKA)
-     {
-     if(!self.bVaild)
-     {
-     return -100;
-     }
-     }
-     */
-    
-    
     if(!self.bConnectedOK)
         return -1;
     if(sPath==nil && dest ==TYPE_DEST_SNADBOX && (TYPE_ONLY_PHONE == nType || TYPE_ONLY_PHONE == nType))
@@ -1276,12 +1269,14 @@ static   int   interrupt_cb( void   *para)
     self = [super init];
     if(self)
     {
+        m_bSaveVideo = false;
         _nScale = 1.0f;
         _nRota = 0;
         _bSetRecordWH = NO;
         
         pFrameSnap = NULL;
         _my_snapframe = [[MyFrame alloc] init];
+        //_assetsLibrary = [[ALAssetsLibrary alloc] init];
         
         _bWhite = NO;
         _bGKACmd_UDP = true;
@@ -1416,7 +1411,14 @@ static   int   interrupt_cb( void   *para)
         disp_codec = NULL;
         m_YUV_ctx = NULL;
         m_YUV_ctxHalf = NULL;
-        av_log_set_level(AV_LOG_QUIET);
+        av_log_set_level(AV_LOG_QUIET);/*
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            while(YES)
+            {
+                usleep(1000*20);
+            }
+        });
+                                        */
     }
     return self;
 }
@@ -2102,6 +2104,7 @@ static   int   interrupt_cb( void   *para)
 -(BOOL)naInit:(NSString *)sPath
 {
     
+    m_bSaveVideo = false;
     AVFrame *mFrame = av_frame_alloc();
     
     mFrame->width=_nRecordWidth;
@@ -2974,7 +2977,6 @@ static   int   interrupt_cb( void   *para)
     }
     [self StartSaveVideo];
     self.nSdStatus |=LocalRecording;
-  //  self.bRealRec = YES;
     [self F_SentStatus];
     NSLog(@"Start Record 1");
     return 0;
@@ -3869,6 +3871,8 @@ static   int   interrupt_cb( void   *para)
 
 -(void)F_StartAdjDispFps
 {
+    //aivenlau--
+#if 1
     __weak JH_WifiCamera *weakself = self;
     _isCancelled = NO;
     dispatch_async(dispatch_get_global_queue(0,0), ^{
@@ -3889,6 +3893,7 @@ static   int   interrupt_cb( void   *para)
         }
         NSLog(@"Exit FPS!!!!!");
     });
+#endif
 }
 
 -(int)naGetFps
@@ -3980,8 +3985,8 @@ static   int   interrupt_cb( void   *para)
     __weak JH_WifiCamera *myself = self;
     __block UIImage *image =imageA;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
-        [assetsLibrary saveImage:image toAlbum:myself.sAlbumName completion:^(NSURL *assetURL, NSError *error)
+        myself.assetsLibrary = [[ALAssetsLibrary alloc] init];
+        [myself.assetsLibrary saveImage:image toAlbum:myself.sAlbumName completion:^(NSURL *assetURL, NSError *error)
          {
              if (!error)
              {
@@ -4012,6 +4017,7 @@ static   int   interrupt_cb( void   *para)
                  [self.delegate SnapPhotoCompelete:NO];
              }
          }];
+        myself.assetsLibrary=nil;
     });
 }
 
@@ -4079,51 +4085,15 @@ bool MY_MP4AacGetConfiguration(uint8_t** ppConfig,
     
     BOOL success;
     NSError* error;
-    
-    
-    success = [_session setCategory:AVAudioSessionCategoryRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionMixWithOthers error:&error];
-    
-    if (self.liveRecorder.releaseMethod == XDXRecorderReleaseMethodAudioUnit)
+    //success = [_session setCategory:AVAudioSessionCategoryRecord withOptions:0 error:&error];
+      success = [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionMixWithOthers error:&error];
     {
-        [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionMixWithOthers error:&error];
-        [_session setPreferredIOBufferDuration:0.01 error:&error]; // 10ms采集一次
-        [_session setPreferredSampleRate:44100 error:&error];  // 需和XDXRecorder中对应
+        [_session setPreferredIOBufferDuration:0.01 error:&error];   //5ms采集一次
+        [_session setPreferredSampleRate:44100 error:&error];         //需和XDXRecorder中对应
         [_session setPreferredInputNumberOfChannels:2 error:&error];
         [_session setPreferredOutputNumberOfChannels:2 error:&error];
-        [_session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error];
-        //[_session setPreferredHardwareSampleRate:44100 error:&error];
     }
     
-    //set USB AUDIO device as high priority: iRig mic HD
-    /*
-     for (AVAudioSessionPortDescription *inputPort in [_session availableInputs])
-     {
-     if([inputPort.portType isEqualToString:AVAudioSessionPortUSBAudio])
-     {
-     [_session setPreferredInput:inputPort error:&error];
-     [_session setPreferredInputNumberOfChannels:1 error:&error];
-     break;
-     }
-     }
-     */
-    
-    success = [_session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error];
-    
-    /*
-     if(!success)
-     NSLog(@"AVAudioSession error setCategory = %@",error.debugDescription);
-     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
-     //Restrore default audio output to BuildinReceiver
-     AVAudioSessionRouteDescription *currentRoute = [[AVAudioSession sharedInstance] currentRoute];
-     for (AVAudioSessionPortDescription *portDesc in [currentRoute outputs])
-     {
-     if([portDesc.portType isEqualToString:AVAudioSessionPortBuiltInReceiver])
-     {
-     [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
-     break;
-     }
-     }
-     */
     success = [_session setActive:YES error:&error];
     
 }
@@ -4195,7 +4165,7 @@ bool MY_MP4AacGetConfiguration(uint8_t** ppConfig,
         {
             [self.liveRecorder stopAudioUnitRecorder];
             NSError *error=nil;
-            [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionMixWithOthers error:&error];
+            [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionMixWithOthers error:&error];
             [_session setActive:NO error:&error];
         }
     }
@@ -4271,6 +4241,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         {
             myself->_spsppsFound = 1;
             myself->video = MP4AddH264VideoTrack(myself->fileHandle,90000,90000/myself->nFps,myself->_nRecordWidth, myself->_nRecordHeight, spsData[1], spsData[2], spsData[3], 3);
+            MP4SetVideoProfileLevel(myself->fileHandle, 0x7F);
             if (myself->video == MP4_INVALID_TRACK_ID) {
                 MP4Close(myself->fileHandle, 0);
                 myself->fileHandle = MP4_INVALID_FILE_HANDLE;
@@ -4284,10 +4255,15 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             if(myself.bG_Audio)
             {
                 myself->audio_trkid = MP4AddAudioTrack(myself->fileHandle, 44100, 1024, MP4_MPEG4_AUDIO_TYPE);
-                //MP4SetAudioProfileLevel(myself->fileHandle, 0x0F);
+                //myself->audio_trkid = MP4AddAudioTrack(myself->fileHandle, 44100, 1024, MP4_MPEG4_AAC_MAIN_AUDIO_TYPE);
                 MP4SetAudioProfileLevel(myself->fileHandle, 0x02);
                 int samplesPerSecond = 44100;
                 int profile = 2; //AAC_LC
+                /* AAC object types */
+//#defineMAIN 1
+//#defineLOW  2
+//#defineSSR  3
+//#defineLTP  4
                 int channelConfig = 2;
                 uint8_t *pConfig = NULL;
                 uint32_t configLength = 0;
@@ -4525,9 +4501,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 
 -(int)writeVideo
 {
-#if 0
-    m_bSaveVideo = true;
-#else
+
     __weak JH_WifiCamera *weakself = self;
     m_bSaveVideo = true;
     //MyFrame *mFrame = [[MyFrame alloc] init];
@@ -4697,8 +4671,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         [defaultManager removeItemAtPath:path error:nil];
         NSLog(@"error : %@",_sAlbumName);
     }
-    
-#endif
     return 0;
 
 }
@@ -5991,7 +5963,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 
 
 
--(void)doReceiveGPRTP{
+-(void)doReceiveGPRTP
+{
     memset(_readRtpBuffer, 0, 1600);
     NSLog(@"Start read RTPB data~~~");
     if(self.nIC_Type == IC_GPRTPB)
@@ -6021,12 +5994,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         free(_databuffer);
         _databuffer=NULL;
     }
-    _databuffer =(char *) malloc(1450*32);//new char[1450*32];
+    _databuffer =(char *) malloc(1450*32);   //new char[1450*32];
     int LEN_Buffer = (1280*720*3)/2;
     _jpgbuffer = (char *) malloc(LEN_Buffer);
     __block int64_t  nTime1_pre=av_gettime()/1000;
     __block int64_t  nTime1_current;
-    
     
     _isCancelled = NO;
     __weak JH_WifiCamera  *weakself = self;
@@ -6090,7 +6062,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     [weakself.packetLock unlock];
                     if(self.nIC_Type == IC_GPRTPB)
                     {
-                        //@autoreleasepool
+#if 1
                         {
                             if (nbytes >= 9)
                             {
@@ -6137,8 +6109,12 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                         }
                                         if(bOK)
                                         {
-                                            NSData *frame_ = [NSData  dataWithBytes:jpg.buffer length:jpg_pack_count * (1450 - 8)];
+                                            //NSData *frame_ = [NSData  dataWithBytes:jpg.buffer length:jpg_pack_count * (1450 - 8)];
+                                            NSData *frame_ = [NSData dataWithBytesNoCopy:jpg.buffer length:jpg_pack_count * (1450 - 8)];
                                             [weakself DecordData_Mjpeg:frame_];
+                                            //NSLog(@"GetData-----------");
+                                            
+                                            
                                         }
                                         else
                                         {
@@ -6151,6 +6127,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                 
                             }
                         }
+#endif
                         
                         
                     }
@@ -6267,6 +6244,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         NSLog(@"Exit ReadThread");
         
     });
+
 }
 
 
@@ -9185,8 +9163,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         return ;
     }
     int ret;
-    
-    // int nKeyFrame = 1;
     int size = (int)data.length;
     {
         if (size>0)
@@ -9195,18 +9171,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             av_init_packet(&packetA);
             packetA.data = outbuff;
             packetA.size = size;
-            /*
-             int frameFinished = 0;
-             ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &frameFinished, &packetA);
-             if(ret<0 || frameFinished == 0)
-             {
-             ret = -1;
-             }
-             else
-             {
-             ret = 0;
-             }
-             */
             ret = -1;
             if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
             {
@@ -9223,7 +9187,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             
             if(ret == 0)
             {
-                
                 [self InitMediaSN:self.b480];
                 _nDispWidth = m_codecCtx->width;
                 _nDispHeight = m_codecCtx->height;
@@ -9232,14 +9195,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     _nRecordWidth = _nDispWidth;
                     _nRecordHeight = _nDispHeight;
                 }
-                
                 sws_scale(img_convert_ctx,
                           (const uint8_t *const *) m_decodedFrame->data,
                           m_decodedFrame->linesize, 0,
                           m_codecCtx->height,
                           pFrameYUV->data, pFrameYUV->linesize);
-                
-                
                 int dd = (int)(_nScale*100);
                 if(dd <=100) //不放大
                 {
@@ -9384,8 +9344,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                               pFrameYUV->linesize, 0,
                               _nDispHeight,
                               frame_b->data, frame_b->linesize);
-                    
-                    //frame_link2frame(frame_b,pFrameYUV);
                     [self frame_link2frame:frame_b DES:pFrameYUV];;
                 }
                 [self SaveVideo];
@@ -9403,7 +9361,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                  pFrameYUV->width, pFrameYUV->height);
                     }
                 }
-                //[self F_SavePhoto:pFrameYUV];
                 [self PlatformDisplay:pFrameYUV];
                 
             }
@@ -9637,11 +9594,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             if(nbytes>0)
             {
                 NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];
-                if(data.length!=7)
+                if(data.length>7)
                 {
-                    [weakself F_Read2000_27Lenght:data];
+                    [weakself F_Read20000_27Lenght:data];
                 }
-                else
+                else if(data.length==7)
                 {
                     [weakself F_RevData20000:data];
                 }
@@ -9652,7 +9609,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
 }
 
--(void)F_Read2000_27Lenght:(NSData *)data
+-(void)F_Read20000_27Lenght:(NSData *)data
 {
     char *readBuff =(char *)[data bytes];
     if(self.nIC_Type == IC_GKA)
@@ -9676,12 +9633,31 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         if(data.length>=8)
         {
-            if(readBuff[0]=='J' && readBuff[1]=='H' &&readBuff[2]=='C' &&readBuff[3]=='M' &&readBuff[4]=='D' && readBuff[5]=='T' &&readBuff[6]=='C')
+            if(readBuff[0]=='J' && readBuff[1]=='H' &&readBuff[2]=='C' &&readBuff[3]=='M' &&readBuff[4]=='D')
             {
-                if([self.delegate respondsToSelector:@selector(GetWifiData:)])
+                if(readBuff[5]=='T' &&readBuff[6]=='C')
                 {
-                    NSData *dat = [NSData dataWithBytes:readBuff+7 length:data.length-7];
-                    [self.delegate GetWifiData:dat];
+                    if([self.delegate respondsToSelector:@selector(GetWifiData:)])
+                    {
+                        NSData *dat = [NSData dataWithBytes:readBuff+7 length:data.length-7];
+                        [self.delegate GetWifiData:dat];
+                    }
+                }
+                else if(readBuff[5]==0x20 &&readBuff[6]==0x00)   //返回模块信息
+                {
+                    if([self.delegate respondsToSelector:@selector(GetModelInfo:)])
+                    {
+                        NSData *dat = [NSData dataWithBytes:readBuff+7 length:data.length-7];
+                        [self.delegate GetModelInfo:dat];
+                    }
+                }
+                else if(readBuff[5]==0x00 &&readBuff[6]==0x06)   //显示Style
+                {
+                    if([self.delegate respondsToSelector:@selector(GetDispStyle:)])
+                    {
+                        int nDispstyle =(int)(readBuff[7]);
+                        [self.delegate GetDispStyle:nDispstyle];
+                    }
                 }
             }
         }
@@ -9708,62 +9684,90 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 self.nSdStatus_GP |=cmd[6];
                 [self.delegate StatusChanged_GP:(int)(self.nSdStatus_GP)];
             }
+            
         }
-        if(cmd[5]==0x10)   //状态
+        else if(cmd[5]==0x20)
         {
-            
-            self.nSdStatus_GP &=0x00FF;
-            cmd[6]  ^=0x04;
-            if(cmd[6] & 0x01)  //正在录像
+            ;
+        }
+        else if(cmd[5]==0x10)   //10 1X  电池电量
+        {
+            if((cmd[6]&0x10) !=0)
             {
-                self.nSdStatus_GP |=0x0100;
-                self.nSdStatus |=SD_Recording;
+                if([self.delegate respondsToSelector:@selector(GetBatteryLevel:)])
+                {
+                    int df =(int)( cmd[6]&0x0F);
+                    [self.delegate GetBatteryLevel:df];
+                }
             }
             else
             {
-                //self.nSdStatus_GP &= (0x0100 ^ 0xFFFF);
-                self.nSdStatus &= (SD_Recording^0xFFFF);
-            }
-            
-            if(cmd[6] & 0x02)  //  拍照
-            {
-                self.nSdStatus_GP |=0x0200;
-            }
-            else
-            {
-                //self.nSdStatus_GP &= (0x0200 ^ 0xFFFF);
-            }
-            
-            if(cmd[6] & 0x04)  //SD
-            {
-                self.nSdStatus_GP |=0x0400;
-                self.nSdStatus |= SD_Ready;
-            }
-            else
-            {
-                self.nSdStatus &=(SD_Ready ^ 0xFFFF);
-            }
-            
-            if(cmd[6] & 0x08)  //卡满
-            {
-                self.nSdStatus_GP |=0x0800;
-                self.nSdStatus &=(SD_Ready ^ 0xFFFF);
-            }
-            
-            
-            if(cmd[6] & 0x10)
-            {
-                self.nSdStatus_GP |=0x1000;      //低电压
-            }
-            
-            if([self.delegate respondsToSelector:@selector(StatusChanged_GP:)])
-            {
-                [self.delegate StatusChanged_GP:(int)(self.nSdStatus_GP)];
+                self.nSdStatus_GP &=0x00FF;
+                cmd[6]  ^=0x04;
+                if(cmd[6] & 0x01)  //正在录像
+                {
+                    self.nSdStatus_GP |=0x0100;
+                    self.nSdStatus |=SD_Recording;
+                }
+                else
+                {
+                    //self.nSdStatus_GP &= (0x0100 ^ 0xFFFF);
+                    self.nSdStatus &= (SD_Recording^0xFFFF);
+                }
+                
+                if(cmd[6] & 0x02)  //  拍照
+                {
+                    self.nSdStatus_GP |=0x0200;
+                }
+                else
+                {
+                    //self.nSdStatus_GP &= (0x0200 ^ 0xFFFF);
+                }
+                
+                if(cmd[6] & 0x04)  //SD
+                {
+                    self.nSdStatus_GP |=0x0400;
+                    self.nSdStatus |= SD_Ready;
+                }
+                else
+                {
+                    self.nSdStatus &=(SD_Ready ^ 0xFFFF);
+                }
+                
+                if(cmd[6] & 0x08)  //卡满
+                {
+                    self.nSdStatus_GP |=0x0800;
+                    self.nSdStatus &=(SD_Ready ^ 0xFFFF);
+                }
+                
+                
+                if(cmd[6] & 0x10)
+                {
+                    self.nSdStatus_GP |=0x1000;      //低电压
+                }
+                
+                if([self.delegate respondsToSelector:@selector(StatusChanged_GP:)])
+                {
+                    [self.delegate StatusChanged_GP:(int)(self.nSdStatus_GP)];
+                }
             }
         }
     }
 }
-
+-(void)naSetLedOnOff:(BOOL)bOpen
+{
+    Byte cmd[7];
+    cmd[0]='J';
+    cmd[1]='H';
+    cmd[2]='C';
+    cmd[3]='M';
+    cmd[4]='D';
+    cmd[4]='D';
+    cmd[5]=0x50;
+    cmd[6]=0x00;
+    NSData *data = [[NSData  alloc] initWithBytes:cmd length:7];
+    [self F_SentUdp:data Server:self.sSerVerIP Port:20000];
+}
 -(void)F_RevData8001:(NSData *)data
 {
     if(!data)

@@ -903,11 +903,11 @@
 			files = (
 				87931E231FD7839C00A08BFF /* convert_from_argb.h in Headers */,
 				8795C68C20906AD2005D7917 /* isma.h in Headers */,
+				870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */,
 				87D4CA5C1F74D4380037A769 /* parseutils.h in Headers */,
 				87D4CA421F74D4380037A769 /* eval.h in Headers */,
 				8795C68820906AD2005D7917 /* chapter.h in Headers */,
 				8795C68E20906AD2005D7917 /* itmf_tags.h in Headers */,
-				870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */,
 				87D4CA2F1F74D4380037A769 /* avconfig.h in Headers */,
 				87D4CA281F74D4380037A769 /* version.h in Headers */,
 				87931E111FD7839C00A08BFF /* basic_types.h in Headers */,

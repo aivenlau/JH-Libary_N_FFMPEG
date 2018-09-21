@@ -85,9 +85,13 @@ typedef enum
 -(void)StatusChanged_GP:(int)nStatus;       //返回 wifi模块上的按键等数据    return module  key status
 -(void)ReceiveImg:(UIImage *)image;         // 如果 实现这个代理，SDK内部不显示图像，而有APP上层来显示接受到的图像帧    if  Implement this delegate, the SDK no display and APP must display the img.
 -(void)GetWifiData:(NSData *)data;          //返回 wifi模块从飞控读取的状态数据  return the Flight control module data
+-(void)GetModelInfo:(NSData *)data;         //获取模块信息，比如 固件版本等。。。。 //不是所有的模块固件都实现了此功能
 -(void)SnapPhotoCompelete:(BOOL)bSaveOK;    //拍照 返回            return  snapphoto is compelete status
 -(void)GetErrorFrame:(uint64_t)nErrorFrame;     // 保留    reserve
 -(void)GetFrameCount:(uint64_t)nCount;    //保留  reserve
+-(void)GetBatteryLevel:(int)nByte;
+-(void)GetDispStyle:(int)nDispStyle;
+
 @end
 
 @interface JH_WifiCamera : NSObject
@@ -135,6 +139,7 @@ typedef enum
 -(void)naCancelGetThumb;   //取消 获取
 -(BOOL)isPhoneRecording;  //模块是否在录像
 
+
 -(void)naSetRecordWH:(int)w Height:(int)h; //设定 录像的 宽高
 
 -(int64_t)naGetRecordTime; //返回 正在录像 的时长 unit:ms
@@ -145,8 +150,8 @@ typedef enum
 -(BOOL)naGetConnected;  //是否连上模块
 
 -(void)naSetRecordAudio:(BOOL)bGAudio;  //录像是否录入声音
--(void)naSetDispStyle:(int)nStyle;
-
+-(void)naSetDispStyle:(int)nStyle;  //设置现象特效
+-(void)naSetLedOnOff:(BOOL)bOpen;
 
 
 
