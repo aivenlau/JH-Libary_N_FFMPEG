@@ -151,8 +151,8 @@ typedef enum
 
 -(void)naSetRecordAudio:(BOOL)bGAudio;  //录像是否录入声音
 -(void)naSetDispStyle:(int)nStyle;  //设置现象特效
--(void)naSetLedOnOff:(BOOL)bOpen;
-
+-(void)naSetLedOnOff:(BOOL)bOpen;   //
+-(void)naSetCmdResType:(int)n;     //对应GKA模块，因为Linux wifi透传的方式，需要设定是那种协议。 目前 0  和 1，  1  表示支持SH GPS飞控协议
 
 
 // 以下保留
