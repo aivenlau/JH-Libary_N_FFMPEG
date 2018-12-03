@@ -19,5 +19,5 @@
 #pragma mark  ----- ----
 - (void)displayYUV420pData:(void *)data width:(NSInteger)w height:(NSInteger)h;
 - (void)clearFrame;
--(void)SetRotation:(int)n;
+//-(void)SetRotation:(int)n;
 @end

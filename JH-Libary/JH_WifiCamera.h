@@ -145,7 +145,8 @@ typedef enum
 -(int64_t)naGetRecordTime; //返回 正在录像 的时长 unit:ms
 
 -(BOOL)naSentCmd:(NSData *)data; //向飞控发送命令
--(void)naRotation:(int)n;// n = 0 90  -90  显示是否转90度显示，主要是有些APP，需要竖屏显示， 但我们模块返回的图像都是横屏的，所以需要设定才能正常满屏显示
+-(void)naRotation:(int)n;// n = 0 90 180 270 -90  显示是否转90度显示，主要是有些APP，需要竖屏显示， 但我们模块返回的图像都是横屏的，所以需要设定才能正常满屏显示
+-(void)naSetbRotaHV:(BOOL)b; 
 -(void)naSetScale:(float)n;  //n >=1;   目前还只针对  类型 IC_GPRTPB
 -(BOOL)naGetConnected;  //是否连上模块
 

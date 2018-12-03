@@ -7,6 +7,13 @@
 //
 
 #import "JH_OpenGLView.h"
+extern BOOL bGoble_3D;
+extern BOOL bWhitClolor;
+extern BOOL   bRotaHV;
+extern int    nRotation;
+
+
+void *blackData_goble;
 
 enum AttribEnum
 {
@@ -70,6 +77,9 @@ enum TextureType
     
     GLuint nDispType;
     
+    
+    
+    
 #ifdef DEBUG
     struct timeval      _time;
     NSInteger           _frameRate;
@@ -79,6 +89,11 @@ enum TextureType
 @property  (strong,nonatomic)  EAGLContext             *glContext;
 
 @property  (assign,nonatomic)  GLsizei                 viewScale;
+
+
+@property  (assign,nonatomic)  int                  vWidth;
+@property  (assign,nonatomic)  int                  vHeight;
+
 
 /*
  *   0 正常
@@ -128,27 +143,32 @@ enum TextureType
 - (void)setVideoSize:(GLuint)width height:(GLuint)height;
 
 
-@property(assign,nonatomic) int nRota;
+//@property(assign,nonatomic) int nRota;
+//@property(assign,nonatomic) BOOL bRotaHV;
 
 
 @end
 
 @implementation JH_OpenGLView
 
--(void)SetRotation:(int)n
+/*
+-(void)SetRotation:(int)n RotaHV:(BOOL)b
 {
-    _nRota = n;
+    nRotation = n;
+    bRotaHV = b;
 }
-
+*/
 - (BOOL)doInit
 {
+    blackData_goble = NULL;
     _nDispStyle = 0;
-    _nRota = 0;
+    nRotation = 0;
+    bRotaHV = NO;
     CAEAGLLayer *eaglLayer = (CAEAGLLayer*) self.layer;
     eaglLayer.opaque = YES;
     eaglLayer.drawableProperties = [NSDictionary dictionaryWithObjectsAndKeys:
                                     [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking,
-                                    kEAGLColorFormatRGB565, kEAGLDrawablePropertyColorFormat,                                    
+                                    kEAGLColorFormatRGB565, kEAGLDrawablePropertyColorFormat,
                                     nil];
     self.contentScaleFactor = [UIScreen mainScreen].scale;
     _viewScale = [UIScreen mainScreen].scale;
@@ -199,28 +219,46 @@ enum TextureType
     return self;
 }
 
+int gwwwww_=1;
+int ghhhhh_=1;
+int gdddddd_=0;
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     CGRect bounds =self.bounds;
     bounds_size = bounds.size;
     __weak JH_OpenGLView *weakself = self;
-#if 0
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        @synchronized(self)
-        {
-            [EAGLContext setCurrentContext:weakself.glContext];
-            [self destoryFrameAndRenderBuffer];
-            [self createFrameAndRenderBuffer];
-        }
-        glViewport(1, 1, bounds.size.width*weakself.viewScale - 2, bounds.size.height*weakself.viewScale - 2);
-    });
-#else
+
     [EAGLContext setCurrentContext:weakself.glContext];
     [self destoryFrameAndRenderBuffer];
     [self createFrameAndRenderBuffer];
-    glViewport(1, 1, bounds.size.width*weakself.viewScale - 2, bounds.size.height*weakself.viewScale - 2);
-#endif
+    /*
+    if(_bRotaHV && _nRota != 0 &&  _nRota != 180) {
+        glViewport(gdddddd_, 0, gwwwww_, ghhhhh_);
+    }
+     */
+    /*
+    float df = ((float)(instance->vHeight))/instance->vWidth;
+    ghhhhh_ =  instance->vHeight;
+    gwwwww_ =  (int)(ghhhhh_*df);
+    
+    gdddddd_ =  (instance->vWidth-gwwwww_)/2;
+     */
+    
+    
+    _vWidth =bounds.size.width*_viewScale;
+    _vHeight = bounds.size.height*_viewScale;
+    
+    float df = ((float)(_vHeight))/_vWidth;
+    ghhhhh_ =  _vHeight;
+    gwwwww_ =  (int)(ghhhhh_*df);
+    gdddddd_ =  (_vWidth-gwwwww_)/2;
+    
+    
+    
+    //glViewport(1, 1, bounds.size.width*weakself.viewScale - 2, bounds.size.height*weakself.viewScale - 2);
+
 }
 
 - (void)setupYUVTexture
@@ -244,12 +282,6 @@ enum TextureType
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
-    /*
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    */
     
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXU]);
@@ -268,76 +300,127 @@ enum TextureType
     
     
 }
-
+#define  TEXTURE_COOR_UNIT 1
+#define  UNIT 1
 - (void)render
 {
     [EAGLContext setCurrentContext:_glContext];
-    CGSize size = bounds_size;//self.bounds.size;
-    glViewport(1, 1, size.width*_viewScale-2, size.height*_viewScale-2);
     static const GLfloat squareVertices[] = {
-        -1.0f, -1.0f,
-        1.0f, -1.0f,
-        -1.0f,  1.0f,
-        1.0f,  1.0f,
+        //-1.0f, -1.0f,
+        //1.0f, -1.0f,
+        //-1.0f,  1.0f,
+        //1.0f,  1.0f,
+        
+        -1 * UNIT, 1 * UNIT,
+        -1 * UNIT, -1 * UNIT,
+        1 * UNIT, 1 * UNIT,
+        1 * UNIT, -1 * UNIT
     };
     
     static const GLfloat squareVertices_90[] = {
-        -1.0f, 1.0f,
-        -1.0f, -1.0f,
-        1.0f,  1.0f,
-        1.0f,  -1.0f,
+        //-1.0f, 1.0f,
+        //-1.0f, -1.0f,
+        //1.0f,  1.0f,
+        //1.0f,  -1.0f,
+        1 * UNIT, 1 * UNIT,
+        -1 * UNIT, 1 * UNIT,
+        1 * UNIT, -1 * UNIT,
+        -1 * UNIT, -1 * UNIT
+    };
+    
+    static const GLfloat dataVertex_Flip[] =
+    {
+        1 * UNIT, -1 * UNIT,
+        1 * UNIT, 1 * UNIT,
+        -1 * UNIT, -1 * UNIT,
+        -1 * UNIT, 1 * UNIT
     };
     
     static const GLfloat squareVertices__90[] = {
+        /*
         1.0f, -1.0f,
         1.0f, 1.0f,
         -1.0f,  -1.0f,
         -1.0f,  1.0f,
+         */
+        -1 * UNIT, -1 * UNIT,
+        1 * UNIT, -1 * UNIT,
+        -1 * UNIT, 1 * UNIT,
+        1 * UNIT, 1 * UNIT
     };
-
+    
     
     static const GLfloat coordVertices[] = {
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f,  0.0f,
-        1.0f,  0.0f,
+        //0.0f, 1.0f,
+        //1.0f, 1.0f,
+        //0.0f,  0.0f,
+        //1.0f,  0.0f,
+        0 * TEXTURE_COOR_UNIT, 0 * TEXTURE_COOR_UNIT,
+        0 * TEXTURE_COOR_UNIT, 1 * TEXTURE_COOR_UNIT,
+        1 * TEXTURE_COOR_UNIT, 0 * TEXTURE_COOR_UNIT,
+        1 * TEXTURE_COOR_UNIT, 1 * TEXTURE_COOR_UNIT
     };
-
-    // Update attribute values
-    if(_nRota==90)
+    
+    if(!bRotaHV)
     {
-        glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices_90);
-    }
-    else if(_nRota==-90)
-    {
-        glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices__90);
+        if(nRotation==90)
+        {
+            glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices_90);
+        }
+        else if(nRotation==-90 || nRotation==270)
+        {
+            glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices__90);
+        }
+        else
+        {
+            glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices);
+        }
     }
     else
     {
-        glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, squareVertices);
+        if (nRotation == 90) {
+            glVertexAttribPointer(ATTRIB_VERTEX,
+                                  2,//GLint size X Y Z
+                                  GL_FLOAT,//GLenum type
+                                  GL_FALSE,//GLboolean normalized
+                                  0,//GLsizei stride
+                                  squareVertices_90//const GLvoid * ptr
+                                  );
+        } else if (nRotation == -90 || nRotation == 270) {
+            glVertexAttribPointer(ATTRIB_VERTEX,
+                                  2,//GLint size X Y Z
+                                  GL_FLOAT,//GLenum type
+                                  GL_FALSE,//GLboolean normalized
+                                  0,//GLsizei stride
+                                  squareVertices__90//const GLvoid * ptr
+                                  );
+        }else if (nRotation == 180) {
+            glVertexAttribPointer(ATTRIB_VERTEX,
+                                  2,//GLint size X Y Z
+                                  GL_FLOAT,//GLenum type
+                                  GL_FALSE,//GLboolean normalized
+                                  0,//GLsizei stride
+                                  dataVertex_Flip//const GLvoid * ptr
+                                  );
+        }
+        else {
+            glVertexAttribPointer(ATTRIB_VERTEX,
+                                  2,//GLint size X Y Z
+                                  GL_FLOAT,//GLenum type
+                                  GL_FALSE,//GLboolean normalized
+                                  0,//GLsizei stride
+                                  squareVertices//const GLvoid * ptr
+                                  );
+        }
+        
     }
-    glEnableVertexAttribArray(ATTRIB_VERTEX);
-    
     glVertexAttribPointer(ATTRIB_TEXTURE, 2, GL_FLOAT, 0, 0, coordVertices);
+    glEnableVertexAttribArray(ATTRIB_VERTEX);
     glEnableVertexAttribArray(ATTRIB_TEXTURE);
-    
     // Draw
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindRenderbuffer(GL_RENDERBUFFER, _renderBuffer);
-    
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR)
-    {
-        //printf("GL_ERROR  11111=======>%d\n", err);
-        ;
-    }
     [_glContext presentRenderbuffer:GL_RENDERBUFFER];
-    err = glGetError();
-    if (err != GL_NO_ERROR)
-    {
-        //printf("GL_ERROR  22222=======>%d\n", err);
-        ;
-    }
 }
 
 #pragma mark - 设置openGL
@@ -663,11 +746,6 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
 #pragma mark - 接口
 - (void)displayYUV420pData:(void *)data width:(NSInteger)w height:(NSInteger)h
 {
-    //_pYuvData = data;
-  //  if (_offScreen || !self.window)
-    {
-    //    return;
-    }
     @synchronized(self)
     {
         if (w != _videoW || h != _videoH)
@@ -686,18 +764,61 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
             {
                 printf("GL_ERROR111222=======>%d\n", err);
             }
+            
         }
+        else
+        {
+            memcpy(blackData_goble,data,w*h*1.5);
+        }
+        
+        //GL_RED_EXT
         [EAGLContext setCurrentContext:_glContext];
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXY]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w, (GLuint)h, GL_RED_EXT, GL_UNSIGNED_BYTE, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w, (GLuint)h, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble);
         
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXU]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble + w * h);
         
         glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXV]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, data + w * h * 5 / 4);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLuint)w/2, (GLuint)h/2, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble + w * h * 5 / 4);
+        
+        
         glUniform1i(nDispType, _nDispStyle);
-        [self render];
+        
+        if(!bWhitClolor)
+        {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        } else
+        {
+            glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
+        }
+        glClear(GL_COLOR_BUFFER_BIT);
+#if 1
+        
+        
+        if(bGoble_3D)
+        {
+            int ww,hh;
+            ww = _vWidth/2;
+            hh = _vHeight/2;
+            glViewport(0, hh/2, ww, hh);
+            [self render];
+            glViewport(ww, hh/2, ww, hh);
+            [self render];
+        }
+        else
+        {
+            if(bRotaHV && nRotation != 0 &&  nRotation != 180) {
+                glViewport(gdddddd_, 0, gwwwww_, ghhhhh_);
+            } else {
+                glViewport(0, 0, _vWidth, _vHeight);
+            }
+            [self render];
+        }
+#else
+       // [self render];
+#endif
+        
     }
     
 #ifdef DEBUG
@@ -728,20 +849,27 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
 {
     _videoW = width;
     _videoH = height;
+    if(blackData_goble!=NULL)
+    {
+        free(blackData_goble);
+    }
     
-    void *blackData = malloc(width * height * 1.5);
-	if(blackData)
-        memset(blackData, 0x0, width * height * 1.5);
+    blackData_goble = malloc(width * height * 1.5);
+	if(blackData_goble!=NULL)
+    {
+        memset(blackData_goble, 0x0, width * height * 1.5);
+        [EAGLContext setCurrentContext:_glContext];
+        //GL_RED_EXT
+        glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXY]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width, height, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble);
+        glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXU]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width/2, height/2, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble + width * height);
+        glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXV]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width/2, height/2, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData_goble + width * height * 5 / 4);
+        //free(blackData_goble);
+    }
     
-    [EAGLContext setCurrentContext:_glContext];
-    glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXY]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width, height, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData);
-    glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXU]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width/2, height/2, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData + width * height);
-    
-    glBindTexture(GL_TEXTURE_2D, _textureYUV[TEXV]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED_EXT, width/2, height/2, 0, GL_RED_EXT, GL_UNSIGNED_BYTE, blackData + width * height * 5 / 4);
-    free(blackData);
+    //free(blackData);
 }
 
 
