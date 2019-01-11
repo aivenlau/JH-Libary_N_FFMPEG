@@ -156,6 +156,10 @@ typedef enum
 -(void)naSetCmdResType:(int)n;     //对应GKA模块，因为Linux wifi透传的方式，需要设定是那种协议。 目前 0  和 1，  1  表示支持SH GPS飞控协议
 
 
+-(void)naSetMirror:(BOOL)b;      //水平镜像
+-(void)naWriteport20000:(NSData *)data;
+
+
 // 以下保留
 //--------------- Reserved Fuction -----
 -(void)naSetIcType:(IC_TYPE)nICType;              //设定 wifi 模块 类型（新版本已经废除，在naInit中自动判断）

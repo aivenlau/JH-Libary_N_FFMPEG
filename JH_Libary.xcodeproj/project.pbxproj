@@ -34,7 +34,7 @@
 		870F46D41DFCEF88007D56B1 /* MySocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46D01DFCEF88007D56B1 /* MySocket.m */; };
 		870F46D81DFCEFB0007D56B1 /* Reachability_aiven.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46D61DFCEFB0007D56B1 /* Reachability_aiven.h */; };
 		870F46D91DFCEFB0007D56B1 /* Reachability_aiven.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46D71DFCEFB0007D56B1 /* Reachability_aiven.m */; };
-		870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; };
 		870F46DD1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46DB1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m */; };
 		870F46DF1DFCEFF4007D56B1 /* phone_rl_protocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DE1DFCEFF4007D56B1 /* phone_rl_protocol.h */; };
 		870F46E21DFCF00E007D56B1 /* JH_WifiCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46E01DFCF00E007D56B1 /* JH_WifiCamera.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -44,6 +44,13 @@
 		871339B220C925100046B690 /* XDXRecoder.h in Headers */ = {isa = PBXBuildFile; fileRef = 871339B020C925100046B690 /* XDXRecoder.h */; };
 		871339B320C925100046B690 /* XDXRecoder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 871339B120C925100046B690 /* XDXRecoder.mm */; };
 		872F741A20B8180400CBBE94 /* libyuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 872F741920B8180400CBBE94 /* libyuv.a */; };
+		8748BF1121DEE7E30062F073 /* libavdevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0A21DEE7E30062F073 /* libavdevice.a */; };
+		8748BF1221DEE7E30062F073 /* libswresample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0B21DEE7E30062F073 /* libswresample.a */; };
+		8748BF1321DEE7E30062F073 /* libavutil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0C21DEE7E30062F073 /* libavutil.a */; };
+		8748BF1421DEE7E30062F073 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0D21DEE7E30062F073 /* libavcodec.a */; };
+		8748BF1521DEE7E30062F073 /* libswscale.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0E21DEE7E30062F073 /* libswscale.a */; };
+		8748BF1621DEE7E30062F073 /* libavformat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0F21DEE7E30062F073 /* libavformat.a */; };
+		8748BF1721DEE7E30062F073 /* libavfilter.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF1021DEE7E30062F073 /* libavfilter.a */; };
 		875518DB1F662CCE00C042B5 /* JPEG_BUFFER.h in Headers */ = {isa = PBXBuildFile; fileRef = 875518D91F662CCE00C042B5 /* JPEG_BUFFER.h */; };
 		875518DC1F662CCE00C042B5 /* JPEG_BUFFER.m in Sources */ = {isa = PBXBuildFile; fileRef = 875518DA1F662CCE00C042B5 /* JPEG_BUFFER.m */; };
 		87931E111FD7839C00A08BFF /* basic_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 87931DCD1FD7839C00A08BFF /* basic_types.h */; };
@@ -189,13 +196,6 @@
 		87D4CA741F74D4380037A769 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4CA021F74D4380037A769 /* version.h */; };
 		87D4CA751F74D4380037A769 /* swscale.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4CA041F74D4380037A769 /* swscale.h */; };
 		87D4CA761F74D4380037A769 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4CA051F74D4380037A769 /* version.h */; };
-		87D4CA771F74D4380037A769 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA071F74D4380037A769 /* libavcodec.a */; };
-		87D4CA781F74D4380037A769 /* libavdevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA081F74D4380037A769 /* libavdevice.a */; };
-		87D4CA791F74D4380037A769 /* libavfilter.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA091F74D4380037A769 /* libavfilter.a */; };
-		87D4CA7A1F74D4380037A769 /* libavformat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA0A1F74D4380037A769 /* libavformat.a */; };
-		87D4CA7B1F74D4380037A769 /* libavutil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA0B1F74D4380037A769 /* libavutil.a */; };
-		87D4CA7C1F74D4380037A769 /* libswresample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA0C1F74D4380037A769 /* libswresample.a */; };
-		87D4CA7D1F74D4380037A769 /* libswscale.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D4CA0D1F74D4380037A769 /* libswscale.a */; };
 		87F947F4215C787A00CF3B1A /* MyCmdData.m in Sources */ = {isa = PBXBuildFile; fileRef = 87F947F2215C787900CF3B1A /* MyCmdData.m */; };
 		87F947F5215C787A00CF3B1A /* MyCmdData.h in Headers */ = {isa = PBXBuildFile; fileRef = 87F947F3215C787900CF3B1A /* MyCmdData.h */; };
 /* End PBXBuildFile section */
@@ -230,6 +230,13 @@
 		871339B020C925100046B690 /* XDXRecoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XDXRecoder.h; sourceTree = "<group>"; };
 		871339B120C925100046B690 /* XDXRecoder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = XDXRecoder.mm; sourceTree = "<group>"; };
 		872F741920B8180400CBBE94 /* libyuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libyuv.a; sourceTree = "<group>"; };
+		8748BF0A21DEE7E30062F073 /* libavdevice.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavdevice.a; sourceTree = "<group>"; };
+		8748BF0B21DEE7E30062F073 /* libswresample.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswresample.a; sourceTree = "<group>"; };
+		8748BF0C21DEE7E30062F073 /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavutil.a; sourceTree = "<group>"; };
+		8748BF0D21DEE7E30062F073 /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavcodec.a; sourceTree = "<group>"; };
+		8748BF0E21DEE7E30062F073 /* libswscale.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswscale.a; sourceTree = "<group>"; };
+		8748BF0F21DEE7E30062F073 /* libavformat.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavformat.a; sourceTree = "<group>"; };
+		8748BF1021DEE7E30062F073 /* libavfilter.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavfilter.a; sourceTree = "<group>"; };
 		875518D91F662CCE00C042B5 /* JPEG_BUFFER.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JPEG_BUFFER.h; sourceTree = "<group>"; };
 		875518DA1F662CCE00C042B5 /* JPEG_BUFFER.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JPEG_BUFFER.m; sourceTree = "<group>"; };
 		87580E391EF3CF9F006854D7 /* MyTFHpple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyTFHpple.h; sourceTree = "<group>"; };
@@ -390,13 +397,6 @@
 		87D4CA021F74D4380037A769 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		87D4CA041F74D4380037A769 /* swscale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = swscale.h; sourceTree = "<group>"; };
 		87D4CA051F74D4380037A769 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
-		87D4CA071F74D4380037A769 /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavcodec.a; sourceTree = "<group>"; };
-		87D4CA081F74D4380037A769 /* libavdevice.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavdevice.a; sourceTree = "<group>"; };
-		87D4CA091F74D4380037A769 /* libavfilter.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavfilter.a; sourceTree = "<group>"; };
-		87D4CA0A1F74D4380037A769 /* libavformat.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavformat.a; sourceTree = "<group>"; };
-		87D4CA0B1F74D4380037A769 /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavutil.a; sourceTree = "<group>"; };
-		87D4CA0C1F74D4380037A769 /* libswresample.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswresample.a; sourceTree = "<group>"; };
-		87D4CA0D1F74D4380037A769 /* libswscale.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswscale.a; sourceTree = "<group>"; };
 		87F947F2215C787900CF3B1A /* MyCmdData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyCmdData.m; sourceTree = "<group>"; };
 		87F947F3215C787900CF3B1A /* MyCmdData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyCmdData.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -406,17 +406,17 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8748BF1121DEE7E30062F073 /* libavdevice.a in Frameworks */,
 				879B4922215A184600DFFAFB /* libiconv.tbd in Frameworks */,
 				879B4921215A182D00DFFAFB /* libz.tbd in Frameworks */,
+				8748BF1621DEE7E30062F073 /* libavformat.a in Frameworks */,
 				879F186F1FC658800044E0EB /* libmp4v2.a in Frameworks */,
-				87D4CA7B1F74D4380037A769 /* libavutil.a in Frameworks */,
-				87D4CA7D1F74D4380037A769 /* libswscale.a in Frameworks */,
-				87D4CA791F74D4380037A769 /* libavfilter.a in Frameworks */,
-				87D4CA781F74D4380037A769 /* libavdevice.a in Frameworks */,
-				87D4CA771F74D4380037A769 /* libavcodec.a in Frameworks */,
-				87D4CA7C1F74D4380037A769 /* libswresample.a in Frameworks */,
+				8748BF1321DEE7E30062F073 /* libavutil.a in Frameworks */,
+				8748BF1221DEE7E30062F073 /* libswresample.a in Frameworks */,
+				8748BF1521DEE7E30062F073 /* libswscale.a in Frameworks */,
 				872F741A20B8180400CBBE94 /* libyuv.a in Frameworks */,
-				87D4CA7A1F74D4380037A769 /* libavformat.a in Frameworks */,
+				8748BF1721DEE7E30062F073 /* libavfilter.a in Frameworks */,
+				8748BF1421DEE7E30062F073 /* libavcodec.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -840,13 +840,13 @@
 		87D4CA061F74D4380037A769 /* lib */ = {
 			isa = PBXGroup;
 			children = (
-				87D4CA071F74D4380037A769 /* libavcodec.a */,
-				87D4CA081F74D4380037A769 /* libavdevice.a */,
-				87D4CA091F74D4380037A769 /* libavfilter.a */,
-				87D4CA0A1F74D4380037A769 /* libavformat.a */,
-				87D4CA0B1F74D4380037A769 /* libavutil.a */,
-				87D4CA0C1F74D4380037A769 /* libswresample.a */,
-				87D4CA0D1F74D4380037A769 /* libswscale.a */,
+				8748BF0D21DEE7E30062F073 /* libavcodec.a */,
+				8748BF0A21DEE7E30062F073 /* libavdevice.a */,
+				8748BF1021DEE7E30062F073 /* libavfilter.a */,
+				8748BF0F21DEE7E30062F073 /* libavformat.a */,
+				8748BF0C21DEE7E30062F073 /* libavutil.a */,
+				8748BF0B21DEE7E30062F073 /* libswresample.a */,
+				8748BF0E21DEE7E30062F073 /* libswscale.a */,
 			);
 			path = lib;
 			sourceTree = "<group>";
@@ -1146,6 +1146,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BITCODE_GENERATION_MODE = bitcode;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1206,6 +1207,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BITCODE_GENERATION_MODE = bitcode;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1268,7 +1270,8 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_BITCODE = NO;
+				ENABLE_BITCODE = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -1289,6 +1292,7 @@
 					"$(PROJECT_DIR)/JH-Libary/FFmpeg_IOS/lib",
 					"$(PROJECT_DIR)/JH-Libary/mp4v2/lib",
 					"$(PROJECT_DIR)/JH-Libary/libyuv/lib",
+					"$(PROJECT_DIR)/JH-Libary/FFmpeg_iOS/lib",
 				);
 				MACH_O_TYPE = mh_dylib;
 				OTHER_CFLAGS = "";
@@ -1314,7 +1318,8 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_BITCODE = NO;
+				ENABLE_BITCODE = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
@@ -1333,6 +1338,7 @@
 					"$(PROJECT_DIR)/JH-Libary/FFmpeg_IOS/lib",
 					"$(PROJECT_DIR)/JH-Libary/mp4v2/lib",
 					"$(PROJECT_DIR)/JH-Libary/libyuv/lib",
+					"$(PROJECT_DIR)/JH-Libary/FFmpeg_iOS/lib",
 				);
 				MACH_O_TYPE = mh_dylib;
 				OTHER_CFLAGS = "";

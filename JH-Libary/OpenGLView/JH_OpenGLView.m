@@ -753,7 +753,7 @@ gl_FragColor = vec4(mask.rgb, 1.0); \
             GLenum err = glGetError();
             if (err != GL_NO_ERROR)
             {
-                printf("GL_ERROR111=======>%d\n", err);
+                //printf("GL_ERROR111=======>%d\n", err);
             }
             [self setVideoSize:(GLuint)w height:(GLuint)h];
         }
