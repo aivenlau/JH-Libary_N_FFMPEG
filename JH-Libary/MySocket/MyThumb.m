@@ -20,6 +20,8 @@
 #include "libavutil/frame.h"
 
 
+#define NEW_FFMPEG
+
 @interface MyThumb()
 {
     
@@ -288,6 +290,7 @@
                         }
                          */
                         ret = -1;
+#ifdef NEW_FFMPEG
                         if (avcodec_send_packet(m_codecCtx_abc, &packet_abc) == 0)
                         {
                             if (avcodec_receive_frame(m_codecCtx_abc, m_decodedFrame_abc) != 0) {
@@ -299,6 +302,22 @@
                         else
                         {
                             ret = -1;
+                        }
+#else
+                        int nFinished = 0;
+                        ret = avcodec_decode_video2(m_codecCtx_abc, m_decodedFrame_abc, &nFinished, &packet_abc);
+                        if(ret>0 && nFinished>0)
+                        {
+                            ret =0;
+                        }
+                        else
+                        {
+                            ret =-1;
+                        }
+#endif
+                        if(ret !=0)
+                        {
+                            return;
                         }
                         
                         img_convert_ctxBmp_abc = sws_getContext(m_codecCtx_abc->width, m_codecCtx_abc->height, AV_PIX_FMT_YUV420P,
@@ -356,6 +375,7 @@
                          */
                         
                         ret =-1;
+#ifdef NEW_FFMPEG
                         if( avcodec_send_frame(My_EncodecodecCtx_abc,pFrameRGB_abc)==0)
                         {
                             if(avcodec_receive_packet(My_EncodecodecCtx_abc,&MypktA)==0)
@@ -363,6 +383,18 @@
                                 ret = 0;
                             }
                         }
+#else
+                        ret = avcodec_decode_video2(My_EncodecodecCtx_abc, pFrameRGB_abc, &nFinished, &MypktA);
+                        if(ret>0 && nFinished>0)
+                        {
+                            ret =0;
+                        }
+                        else
+                        {
+                            ret =-1;
+                        }
+                        
+#endif
                         
                         if (ret == 0)
                         {

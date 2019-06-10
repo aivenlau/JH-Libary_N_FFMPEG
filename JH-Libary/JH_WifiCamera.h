@@ -50,6 +50,8 @@ typedef enum
     IC_GPRTP,    //192.168.28.X
     IC_GPH264A,   //192.168.30.X
     IC_GPRTPB,   //192.168.29.X
+    IC_GPRTPC,   //192.168.31.X
+    IC_RTLH264,   //192.168.32.X
     IC_COUNT
 }IC_TYPE;
 
@@ -83,6 +85,7 @@ typedef enum
 -(void)StatusChanged:(int)nStatus;         //返回 wifi 模块状态         return wifi module status
 -(void)GetFiles:(NSString *)sFilesName;     //返回 SD卡上文件（只针对 国科 模块）    return SD files(only GKA module)
 -(void)StatusChanged_GP:(int)nStatus;       //返回 wifi模块上的按键等数据    return module  key status
+-(void)onGetKey:(int)nKey;       //返回 wifi模块上的按键    return module  key 
 -(void)ReceiveImg:(UIImage *)image;         // 如果 实现这个代理，SDK内部不显示图像，而有APP上层来显示接受到的图像帧    if  Implement this delegate, the SDK no display and APP must display the img.
 -(void)GetWifiData:(NSData *)data;          //返回 wifi模块从飞控读取的状态数据  return the Flight control module data
 -(void)GetModelInfo:(NSData *)data;         //获取模块信息，比如 固件版本等。。。。 //不是所有的模块固件都实现了此功能
@@ -91,6 +94,14 @@ typedef enum
 -(void)GetFrameCount:(uint64_t)nCount;    //保留  reserve
 -(void)GetBatteryLevel:(int)nByte;
 -(void)GetDispStyle:(int)nDispStyle;
+
+-(void)GetUdpData:(NSData *)data;
+
+-(void)WriteFlashResult:(int)nRe;
+-(void)onReadDataFromFlash:(NSData *)data;
+
+
+-(void)onGetWifiInfoData:(int)nPwm;     //返回读取到的PWMz设定值
 
 @end
 
@@ -157,8 +168,25 @@ typedef enum
 
 
 -(void)naSetMirror:(BOOL)b;      //水平镜像
+
+
+-(BOOL)naSentUdpData:(NSString *)sIP  Port:(int)nPort  Data:(NSData *)data;
+-(BOOL)naStartReadUdp:(int)nPort;
+-(BOOL)naStopReadUdp;
+
+
+
 -(void)naWriteport20000:(NSData *)data;
 
+
+-(void)naWriteData2Flash:(NSData *)data;
+-(void)naReadDataFromFlash;
+
+-(void)naSetLedPWM:(int)nPwm;
+-(void)naGetLedPWM;
+
+
+-(void)naGetModelInfo;  //获取模块本身的信息 结果通过  GetModelInfo 返回
 
 // 以下保留
 //--------------- Reserved Fuction -----

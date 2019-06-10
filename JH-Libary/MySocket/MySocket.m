@@ -90,7 +90,7 @@
     dest_addr.sin_addr.s_addr = inet_addr([sHost UTF8String]);
     
     
-    int send_len = 100 * 1024;
+    int send_len = 50 * 1024;
     if( setsockopt(self.socketfd, SOL_SOCKET, SO_RCVBUF, (void*)&send_len, sizeof(int) ) < 0 ){
         self.bConnected = false;
     }

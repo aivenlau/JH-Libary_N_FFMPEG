@@ -17,10 +17,10 @@
     self = [super init];
     if(self)
     {
-        _buffer = malloc(400*1024);
+        _buffer = malloc(500*1024);
         _nCount = 0;;
         _nJpegInx = 0;
-        memset(mInx, 0, 100);
+        memset(mInx, 0, 250);
     }
     return self;
 }
@@ -29,7 +29,7 @@
 {
     _nCount = 0;;
     _nJpegInx = 0;
-    memset(mInx, 0, 100);
+    memset(mInx, 0, 250);
     
 }
 -(void)Release
@@ -41,7 +41,19 @@
         }
         _nCount = 0;;
         _nJpegInx = 0;
-        memset(mInx, 0, 100);
+        memset(mInx, 0, 250);
+}
+
+-(BOOL)AppendData:(uint8_t *)data Length:(int)nLen
+{
+     if(_nCount+nLen>500*1024)
+     {
+         [self Clear];
+         return NO;
+     }
+    memcpy(_buffer+_nCount,data,nLen);
+    _nCount+=nLen;
+    return YES;
 }
 
 

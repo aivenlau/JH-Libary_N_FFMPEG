@@ -11,15 +11,16 @@
 @interface JPEG_BUFFER : NSObject
 {
 @public
-    uint8_t mInx[100];
+    uint8_t mInx[250];
 }
 
 @property(assign,nonatomic)uint8_t *buffer;
-@property(assign,nonatomic)uint8_t   nCount;
+@property(assign,nonatomic)uint32_t   nCount;
 @property(assign,nonatomic)uint16_t  nJpegInx;
 
 
 -(void)Clear;
 -(void)Release;
+-(BOOL)AppendData:(uint8_t *)data Length:(int)nLen;
 
 @end

@@ -38,7 +38,7 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "JH-Libary/JH_WifiCamera.m"
@@ -47,7 +47,23 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "8680"
             endingLineNumber = "8680"
-            landmarkName = "-F_H264Decord:TYPE:"
+            landmarkName = "-Connect_gk"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "JH-Libary/JH_WifiCamera.m"
+            timestampString = "574330381.639859"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "8844"
+            endingLineNumber = "8844"
+            landmarkName = "-F_InitFrame"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

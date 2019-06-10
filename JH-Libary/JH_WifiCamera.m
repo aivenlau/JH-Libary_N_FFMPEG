@@ -1,7 +1,9 @@
 
 #define  MYSOCKET
 #define  BufferLen  (1024*100)
-#define  VideoPackLen  (512)
+#define  VideoPackLen  (8096)
+
+#define  NEW_FFMPEG
 
 #import <AVFoundation/AVFoundation.h>
 #import <VideoToolbox/VideoToolbox.h>
@@ -96,7 +98,7 @@ int    nRotation;
     T_NET_VIDEO_INFO    video_info_A;
     
     struct SwsContext *img_convert_ctx;
-    struct SwsContext *img_convert_ctxBmp;
+    //struct SwsContext *img_convert_ctxBmp;
     //struct SwsContext *img_convert_ctx_half;
     //struct SwsContext *img_convert_ctx_Rec;
     
@@ -126,6 +128,7 @@ int    nRotation;
     enum AVCodecID           m_EncodeID;
     
     NSMutableArray      *videoFrames;
+    NSMutableArray      *videoFrames_A;
     NSMutableArray      *ImageArray;
     
     
@@ -163,44 +166,28 @@ int    nRotation;
     enum AVPixelFormat pix_format;
     enum AVPixelFormat disp_pix_format;
     enum AVCodecID     dispCodeID;
-    
     //int nDispWidth;
     //int nDispHeight;
-    
     Byte    *_packDataA;//[1024*1024*2];
     Byte    *_packData;//[1024*1024*2];
-    
-    
-    
-    
-    
     int         nFrame_Count;
     int64_t     nStartTime;
-    
     //GPRTP
-    
-    
-    
-    
     VTCompressionSessionRef _encodeSesion;
     dispatch_queue_t _encodeQueue;
-    
     int nFps;
-    
-    
+    int  m_InxArray[10];
     MP4TrackId video;
     MP4TrackId audio_trkid;
     MP4FileHandle fileHandle;
     CVPixelBufferRef pixelBuffer;
-    
 #ifdef H_264Decoder_DEF
     H264HwDecoderImpl *h264Decoder;
 #endif
-    
-    
-    
-    
 }
+
+@property(assign,nonatomic) int32_t nJpgStart;
+@property(assign,nonatomic) int32_t nJpgEnd;
 
 @property(strong,nonatomic) MyFrame  *my_snapframe;
 @property(assign,nonatomic)  float  nScale;
@@ -225,7 +212,7 @@ int    nRotation;
 @property(assign,nonatomic)   int nDispHeight;
 
 @property  (assign,nonatomic)  char *jpgbuffer;
-@property  (assign,nonatomic)  char *databuffer;
+//@property  (assign,nonatomic)  char *databuffer;
 @property  (assign,nonatomic)  uint8_t *readRtpBuffer;//[1600];
 @property  (assign,nonatomic)  Byte    *pBuffer;
 
@@ -245,6 +232,8 @@ int    nRotation;
 @property (strong, nonatomic) JPEG_BUFFER *jpg0;
 @property (strong, nonatomic) JPEG_BUFFER *jpg1;
 @property (strong, nonatomic) JPEG_BUFFER *jpg2;
+@property (strong, nonatomic) JPEG_BUFFER *jpg3;
+@property (strong, nonatomic) JPEG_BUFFER *jpg4;
 
 
 @property (strong, nonatomic) NSLock *packetLock;
@@ -254,57 +243,35 @@ int    nRotation;
 @property (assign,nonatomic) int videofd;
 
 @property (assign,nonatomic)  BOOL isCancelled;
-
-
-
-
 @property (assign,nonatomic)  BOOL bSNT;
 @property (strong,nonatomic)  UIImage *imgSNT;
 @property (weak,nonatomic)  JH_OpenGLView *imageView;
-
 @property (nonatomic,assign) int    nCheckStat;
 @property (nonatomic,assign)int64_t  nLost;
 @property (nonatomic,assign)int64_t  nRelinkCount;
-
 @property (nonatomic,strong)Reachability_aiven *hostReach;
 @property (nonatomic,assign)BOOL     bPlaying;
-
 @property (nonatomic,assign)BOOL     bNeedStop2Relink;
-
 @property (nonatomic,assign)BOOL     bOpen;
 @property (nonatomic,assign)BOOL     bExitReLink;
-
-
 @property(assign,nonatomic)  int64_t             nCurrent_now;//= av_gettime();
 @property(assign,nonatomic)  int64_t             nTimeOut;//= av_gettime();
-
 @property(assign,nonatomic)  IC_TYPE        nIC_Type;
 @property(strong,nonatomic)  NSString*      sPath;
 @property(strong,nonatomic)  NSString*      sAlbumName;
 //@property (strong,nonatomic) GCDAsyncUdpSocket *Udp_SendSocket;
 //@property (strong,nonatomic) GCDAsyncSocket     *Tcp_SendSocket;
-
 @property(assign,nonatomic)  BOOL           bRecroding;
-
-
 @property(assign,nonatomic)  BOOL           bNeedSave2Photo;
 @property(assign,nonatomic)  BOOL           bSaveCompelete;
-
-
 @property(assign,nonatomic)  BOOL           bStartCheckStatus;
-
 @property (nonatomic,assign)  uint8_t nHttpType;
 @property (nonatomic,assign)  uint16_t nSdStatus;
-
 @property (nonatomic,assign)  uint16_t nSdStatus_GP;
-
 @property (nonatomic,assign)  BOOL bIsWifi;
 @property (nonatomic,assign)  BOOL bNeedRecon;
-
 @property (nonatomic,strong)  NSString *sWifiIP;
 @property (nonatomic,strong)  NSString *sSerVerIP;
-
-
 @property (strong, nonatomic) NSData *header10;
 @property (strong, nonatomic) NSData *header15;
 @property (strong, nonatomic) NSData *header20;
@@ -314,24 +281,17 @@ int    nRotation;
 @property (strong, nonatomic) NSData *header40;
 @property (strong, nonatomic) NSData *header45;
 @property (strong, nonatomic) NSData *header50;
-
-
 @property (assign, nonatomic) int     packData_Inx;
-
 @property (strong, nonatomic) NSLock *videoLock;
-
 @property (strong, nonatomic) NSMutableData *mjpgFrame;
 @property (strong, nonatomic) NSString  *sSavePath;
 @property (strong, nonatomic) NSString  *sSavePathPhoto;
 @property (assign, nonatomic) BOOL  bNormalStop;
-
-
 //@property (strong, nonatomic) GCDAsyncUdpSocket *ReceiveUDPSocket;
 @property (assign, nonatomic) BOOL  bExit;
 
 @property (assign, nonatomic) BOOL  bTCP;
 @property (assign, nonatomic) uint32_t  nHeartbeat;
-
 
 @property (strong, nonatomic) NSString *sSSID;
 
@@ -375,6 +335,9 @@ int    nRotation;
 @property (strong,nonatomic) MySocket *GKA_Cmd_Socket;
 @property (strong,nonatomic) MySocket *GKA_Data_Socket;
 @property (strong,nonatomic) MySocket *GKA_Notice_Socket;
+
+
+@property (strong,nonatomic) MySocket *GPRTPC_Data_Socket;
 
 
 
@@ -461,6 +424,8 @@ int    nRotation;
 @property(assign,nonatomic)     int socket_udp20000;
 @property(assign,nonatomic)     BOOL bRead20000;
 
+@property(assign,nonatomic)     BOOL bReadUdp;
+@property(assign,nonatomic)     int socket_udp;
 
 @property(assign,nonatomic)     int nFlag;
 
@@ -490,6 +455,11 @@ int    nRotation;
 
 @property(assign,nonatomic) BOOL bMirror;
 
+
+@property(assign,nonatomic) int  nDelayTime;
+
+
+@property(assign,nonatomic) int nDelaymsPlay;
 
 @end
 
@@ -554,87 +524,87 @@ typedef struct
     return newImage;
 }
 
--(void)F_GetServerIP
-{
-    BOOL success;
-    struct ifaddrs * addrs;
-    const struct ifaddrs * cursor;
-    NSString *sIp=nil;
-    success = (getifaddrs(&addrs) == 0);
-    if (success)
-    {
-        cursor = addrs;
-        while (cursor != NULL)
-        {
-            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
-            {
-                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
-                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
-                {
-                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
-                    break;
-                }
-            }
-            cursor = cursor->ifa_next;
-        }
-        freeifaddrs(addrs);
-    }
-    NSRange range = [sIp rangeOfString:@"192.168.234."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.234.1";
-    }
-    range = [sIp rangeOfString:@"192.168.25."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.25.1";
-    }
-    range = [sIp rangeOfString:@"192.168.26."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.26.1";
-    }
-    range = [sIp rangeOfString:@"192.168.27."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.27.1";
-    }
-    range = [sIp rangeOfString:@"192.168.28."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.28.1";
-    }
-    range = [sIp rangeOfString:@"192.168.29."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.29.1";
-    }
-    range = [sIp rangeOfString:@"192.168.30."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.30.1";
-    }
-    range = [sIp rangeOfString:@"192.168.123."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"192.168.123.1";
-    }
-    
-    range = [sIp rangeOfString:@"175.16.10."];
-    if (range.location !=NSNotFound)
-    {
-        self.sSerVerIP = @"175.16.10.2";
-    }
-    
-    
-}
+//-(void)F_GetServerIP
+//{
+//    BOOL success;
+//    struct ifaddrs * addrs;
+//    const struct ifaddrs * cursor;
+//    NSString *sIp=nil;
+//    success = (getifaddrs(&addrs) == 0);
+//    if (success)
+//    {
+//        cursor = addrs;
+//        while (cursor != NULL)
+//        {
+//            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
+//            {
+//                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
+//                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
+//                {
+//                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
+//                    break;
+//                }
+//            }
+//            cursor = cursor->ifa_next;
+//        }
+//        freeifaddrs(addrs);
+//    }
+//    NSRange range = [sIp rangeOfString:@"192.168.234."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.234.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.25."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.25.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.26."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.26.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.27."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.27.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.28."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.28.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.29."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.29.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.30."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.30.1";
+//    }
+//    range = [sIp rangeOfString:@"192.168.123."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"192.168.123.1";
+//    }
+//
+//    range = [sIp rangeOfString:@"175.16.10."];
+//    if (range.location !=NSNotFound)
+//    {
+//        self.sSerVerIP = @"175.16.10.2";
+//    }
+//
+//
+//}
 
 -(BOOL)naIsValidType
 {
-    return [self F_SetOpInfo];
+    return [self F_GetDeviceType];
 }
 
--(BOOL)F_SetOpInfo
+-(BOOL)F_GetDeviceType
 {
     BOOL success;
     struct ifaddrs * addrs;
@@ -660,66 +630,37 @@ typedef struct
         freeifaddrs(addrs);
     }
     BOOL re = NO;
+    self.sSerVerIP=@"127.0.0.1";
+    self.nIC_Type = IC_NO;
     if(!sIp)
         return re;
-    
-    self.sSerVerIP=@"192.168.200.1";
-    
+    /*
+    IC_GK = 0,      //192.168.234.X
+    IC_SN,          //192.168.123.X
+    IC_GKA,         //175.16.10.X
+    IC_GP,          //192.168.25.X
+    IC_GPRTSP,      //192.168.26.X
+    IC_GPH264,      //192.168.27.X
+    IC_GPRTP,       //192.168.28.X
+    IC_GPRTPB,      //192.168.29.X
+    IC_GPH264A,     //192.168.30.X
+    IC_GPRTPC,      //192.168.31.X
+    IC_RTLH264,     //192.168.32.X
+    */
     NSRange range = [sIp rangeOfString:@"192.168.234."];
     if (range.location !=NSNotFound)
     {
         self.sWifiIP = @"192.168.234.";
         self.sSerVerIP =@"192.168.234.1";
+        self.nIC_Type =IC_GK;
         re = YES;
     }
-    range = [sIp rangeOfString:@"192.168.25."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.25.";
-        self.sSerVerIP =@"192.168.25.1";
-        re = YES;
-    }
-    range = [sIp rangeOfString:@"192.168.26."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.26.";
-        self.sSerVerIP =@"192.168.26.1";
-        re = YES;
-    }
-    range = [sIp rangeOfString:@"192.168.27."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.27.";
-        self.sSerVerIP =@"192.168.27.1";
-        re = YES;
-    }
-    range = [sIp rangeOfString:@"192.168.28."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.28.";
-        self.sSerVerIP =@"192.168.28.1";
-        re = YES;
-    }
-    range = [sIp rangeOfString:@"192.168.29."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.29.";
-        self.sSerVerIP =@"192.168.29.1";
-        re = YES;
-    }
-    range = [sIp rangeOfString:@"192.168.30."];
-    if (range.location !=NSNotFound)
-    {
-        self.sWifiIP = @"192.168.30.";
-        self.sSerVerIP =@"192.168.30.1";
-        re = YES;
-    }
-    
     range = [sIp rangeOfString:@"192.168.123."];
     if (range.location !=NSNotFound)
     {
         self.sWifiIP = @"192.168.123.";
         self.sSerVerIP =@"192.168.123.1";
+        self.nIC_Type = IC_SN;
         re = YES;
     }
     
@@ -728,190 +669,286 @@ typedef struct
     {
         self.sWifiIP = @"175.16.10.";
         self.sSerVerIP =@"175.16.10.2";
+        self.nIC_Type =IC_GKA;
+        re = YES;
+    }
+    
+    range = [sIp rangeOfString:@"192.168.25."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.25.";
+        self.sSerVerIP =@"192.168.25.1";
+        self.nIC_Type =IC_GP;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.26."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.26.";
+        self.sSerVerIP =@"192.168.26.1";
+        self.nIC_Type =IC_GPRTSP;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.27."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.27.";
+        self.sSerVerIP =@"192.168.27.1";
+        self.nIC_Type =IC_GPH264;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.28."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.28.";
+        self.sSerVerIP =@"192.168.28.1";
+        self.nIC_Type =IC_GPRTP;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.29."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.29.";
+        self.sSerVerIP =@"192.168.29.1";
+        self.nIC_Type =IC_GPRTPB;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.30."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.30.";
+        self.sSerVerIP =@"192.168.30.1";
+        self.nIC_Type =IC_GPH264A;
+        re = YES;
+    }
+    range = [sIp rangeOfString:@"192.168.31."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.31.";
+        self.sSerVerIP =@"192.168.31.1";
+        self.nIC_Type =IC_GPRTPC;
+        re = YES;
+    }
+    
+    range = [sIp rangeOfString:@"192.168.32."];
+    if (range.location !=NSNotFound)
+    {
+        self.sWifiIP = @"192.168.32.";
+        self.sSerVerIP =@"192.168.32.1";
+        self.nIC_Type =IC_RTLH264;
         re = YES;
     }
     return re;
     
 }
--(void)SetIcType:(IC_TYPE)nICType
-{
-    //[self naSetIcType:nICType];
-    self.nIC_Type = nICType;
-    if(nICType == IC_NO)
-    {
-        if(self.hostReach)
-            [self.hostReach stopNotifier];
-        self.hostReach=nil;
-        self.bIsWifi = NO;
-        return;
-    }
-    if(nICType == IC_GK)
-    {
-        self.sWifiIP = @"192.168.234.";
-        self.sSerVerIP =@"192.168.234.1";
-        
-    }
-    else if(nICType == IC_SN)
-    {
-        self.sWifiIP = @"192.168.123.";
-        self.sSerVerIP =@"192.168.123.1";
-    }
-    else if(nICType == IC_GKA)
-    {
-        self.sWifiIP = @"175.16.10.";
-        self.sSerVerIP =@"175.16.10.2";
-    }
-    else if(nICType == IC_GPH264)
-    {
-        self.sWifiIP = @"192.168.27.";
-        self.sSerVerIP =@"192.168.27.1";
-    }
-    else if(nICType == IC_GPRTP)
-    {
-        self.sWifiIP = @"192.168.28.";
-        self.sSerVerIP =@"192.168.28.1";
-    }
-    else if(nICType == IC_GPRTPB)
-    {
-        self.sWifiIP = @"192.168.29.";
-        self.sSerVerIP =@"192.168.29.1";
-    }
-    else if(nICType == IC_GPH264A)
-    {
-        self.sWifiIP = @"192.168.30.";
-        self.sSerVerIP =@"192.168.30.1";
-    }
-    
-}
+
+//
+//-(void)SetIcType:(IC_TYPE)nICType
+//{
+//    //[self naSetIcType:nICType];
+//    self.nIC_Type = nICType;
+//    if(nICType == IC_NO)
+//    {
+//        if(self.hostReach)
+//            [self.hostReach stopNotifier];
+//        self.hostReach=nil;
+//        self.bIsWifi = NO;
+//        return;
+//    }
+//    if(nICType == IC_GK)
+//    {
+//        self.sWifiIP = @"192.168.234.";
+//        self.sSerVerIP =@"192.168.234.1";
+//
+//    }
+//    else if(nICType == IC_SN)
+//    {
+//        self.sWifiIP = @"192.168.123.";
+//        self.sSerVerIP =@"192.168.123.1";
+//    }
+//    else if(nICType == IC_GKA)
+//    {
+//        self.sWifiIP = @"175.16.10.";
+//        self.sSerVerIP =@"175.16.10.2";
+//    }
+//    else if(nICType == IC_GPH264)
+//    {
+//        self.sWifiIP = @"192.168.27.";
+//        self.sSerVerIP =@"192.168.27.1";
+//    }
+//    else if(nICType == IC_GPRTP)
+//    {
+//        self.sWifiIP = @"192.168.28.";
+//        self.sSerVerIP =@"192.168.28.1";
+//    }
+//    else if(nICType == IC_GPRTPB)
+//    {
+//        self.sWifiIP = @"192.168.29.";
+//        self.sSerVerIP =@"192.168.29.1";
+//    }
+//    else if(nICType == IC_GPH264A)
+//    {
+//        self.sWifiIP = @"192.168.30.";
+//        self.sSerVerIP =@"192.168.30.1";
+//    }
+//    else if(nICType == IC_GPRTPC)
+//    {
+//        self.sWifiIP = @"192.168.31.";
+//        self.sSerVerIP =@"192.168.31.1";
+//    }
+//    else if(nICType == IC_RTLH264)
+//    {
+//        self.sWifiIP = @"192.168.32.";
+//        self.sSerVerIP =@"192.168.32.1";
+//    }
+//
+//}
 
 -(IC_TYPE)F_AdjType:(NSString *)sPat
 {
-    IC_TYPE SetIcType = [self F_GetType_];
-    if(SetIcType == IC_NO)
-        return NO;
-    
-    [self SetIcType:SetIcType];
-    
     if([sPat hasPrefix:@"rtsp://192.168.25.1"])
     {
         self.sWifiIP = @"192.168.25.";
         self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GPRTSP;
+        self.nIC_Type = IC_GPRTSP;
     }
-    if([sPat hasPrefix:@"rtsp://192.168.26.1"])
+    else if([sPat hasPrefix:@"rtsp://192.168.26.1"])
     {
         self.sWifiIP = @"192.168.26.";
         self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GPRTSP;
+        self.nIC_Type = IC_GPRTSP;
     }
-    
-    if([sPat hasPrefix:@"http://192.168.25.1"])
+
+    else if([sPat hasPrefix:@"http://192.168.25.1"])
     {
         self.sWifiIP = @"192.168.25.";
         self.sSerVerIP =@"192.168.25.1";
-        SetIcType = IC_GP;
+        self.nIC_Type = IC_GP;
     }
-    if([sPat hasPrefix:@"http://192.168.26.1"])
+    else if([sPat hasPrefix:@"http://192.168.26.1"])
     {
         self.sWifiIP = @"192.168.26.";
         self.sSerVerIP =@"192.168.26.1";
-        SetIcType = IC_GP;
+        self.nIC_Type = IC_GP;
     }
-    self.nIC_Type = SetIcType;
-    return  SetIcType;
-}
-
-
--(int)F_GetType_
-{
-    BOOL success;
-    struct ifaddrs * addrs;
-    const struct ifaddrs * cursor;
-    NSString *sIp=nil;
-    success = (getifaddrs(&addrs) == 0);
-    if (success)
+    else
     {
-        cursor = addrs;
-        while (cursor != NULL)
+        if(self.nIC_Type == IC_GP)
         {
-            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
-            {
-                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
-                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
-                {
-                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
-                    break;
-                }
-            }
-            cursor = cursor->ifa_next;
+            sPat =@"http://192.168.25.1:8080/?action=stream";
         }
-        freeifaddrs(addrs);
+        else if(self.nIC_Type == IC_GPRTSP)
+        {
+            sPat =@"rtsp://192.168.26.1:8080/?action=stream";
+        }
     }
-    
-    /*
-     IC_GK = 0,      //192.168.234.X
-     
-     IC_SN,          //192.168.123.X
-     IC_GKA,             //175.16.10.X
-     IC_GP,          //192.168.25.X
-     IC_GPRTSP,   //192.168.26.X
-     IC_GPH264,   //192.168.27.X
-     IC_GPRTP,    //192.168.28.X
-     IC_GPRTPB,   //192.168.29.X
-     IC_GPH264A,   //192.168.30.X
-     */
-    
-    if(!sIp)
-        return IC_NO;
-    NSRange range = [sIp rangeOfString:@"192.168.234."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GK;
-    }
-    range = [sIp rangeOfString:@"192.168.25."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GP;
-    }
-    range = [sIp rangeOfString:@"192.168.26."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GPRTSP;
-    }
-    range = [sIp rangeOfString:@"192.168.27."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GPH264;
-    }
-    range = [sIp rangeOfString:@"192.168.28."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GPRTP;
-    }
-    range = [sIp rangeOfString:@"192.168.29."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GPRTPB;
-    }
-    range = [sIp rangeOfString:@"192.168.30."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GPH264A;
-    }
-    
-    range = [sIp rangeOfString:@"192.168.123."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_SN;
-    }
-    
-    range = [sIp rangeOfString:@"175.16.10."];
-    if (range.location !=NSNotFound)
-    {
-        return IC_GKA;
-    }
-    return IC_NO;
+    return  self.nIC_Type;
 }
+
+
+//-(int)F_GetType_
+//{
+//    BOOL success;
+//    struct ifaddrs * addrs;
+//    const struct ifaddrs * cursor;
+//    NSString *sIp=nil;
+//    success = (getifaddrs(&addrs) == 0);
+//    if (success)
+//    {
+//        cursor = addrs;
+//        while (cursor != NULL)
+//        {
+//            if (cursor->ifa_addr->sa_family == AF_INET && (cursor->ifa_flags & IFF_LOOPBACK) == 0)
+//            {
+//                NSString *name = [NSString stringWithUTF8String:cursor->ifa_name];
+//                if ([name isEqualToString:@"en0"])  // Wi-Fi adapter
+//                {
+//                    sIp =  [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)cursor->ifa_addr)->sin_addr)];
+//                    break;
+//                }
+//            }
+//            cursor = cursor->ifa_next;
+//        }
+//        freeifaddrs(addrs);
+//    }
+//
+//    /*
+//     IC_GK = 0,      //192.168.234.X
+//     IC_SN,          //192.168.123.X
+//     IC_GKA,             //175.16.10.X
+//     IC_GP,          //192.168.25.X
+//     IC_GPRTSP,   //192.168.26.X
+//     IC_GPH264,   //192.168.27.X
+//     IC_GPRTP,    //192.168.28.X
+//     IC_GPRTPB,   //192.168.29.X
+//     IC_GPH264A,   //192.168.30.X
+//     IC_GPRTPC,   //192.168.31.X
+//     IC_RTLH264,   //192.168.32.X
+//     */
+//
+//    if(!sIp)
+//        return IC_NO;
+//    NSRange range = [sIp rangeOfString:@"192.168.234."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GK;
+//    }
+//    range = [sIp rangeOfString:@"192.168.25."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GP;
+//    }
+//    range = [sIp rangeOfString:@"192.168.26."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPRTSP;
+//    }
+//    range = [sIp rangeOfString:@"192.168.27."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPH264;
+//    }
+//    range = [sIp rangeOfString:@"192.168.28."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPRTP;
+//    }
+//    range = [sIp rangeOfString:@"192.168.29."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPRTPB;
+//    }
+//    range = [sIp rangeOfString:@"192.168.30."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPH264A;
+//    }
+//
+//    range = [sIp rangeOfString:@"192.168.123."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_SN;
+//    }
+//
+//    range = [sIp rangeOfString:@"175.16.10."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GKA;
+//    }
+//    range = [sIp rangeOfString:@"192.168.31."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_GPRTPC;
+//    }
+//
+//    range = [sIp rangeOfString:@"192.168.32."];
+//    if (range.location !=NSNotFound)
+//    {
+//        return IC_RTLH264;
+//    }
+//
+//    return IC_NO;
+//}
 
 -(void)naSetDispViewB:(JH_OpenGLView *)dispView  BackGround:(UIImage *)img
 {
@@ -1237,7 +1274,9 @@ static   int   interrupt_cb( void   *para)
 
 -(void)F_StartChecknetWrok:(const char *)ipaddr
 {
-    
+ 
+    if(ipaddr == NULL)
+        return;
     __weak JH_WifiCamera *weakself = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
                    {
@@ -1295,6 +1334,7 @@ static   int   interrupt_cb( void   *para)
     self = [super init];
     if(self)
     {
+        _nDelaymsPlay = 0;
         _bMirror = NO;
         _array = [[NSMutableArray alloc] init];
         _nCmdResType = 0;
@@ -1316,7 +1356,7 @@ static   int   interrupt_cb( void   *para)
         bWhitClolor = NO;
         _bGKACmd_UDP = true;
         _bGKA_ConnOK = false;
-      //  self.bRealRec = NO;
+        //  self.bRealRec = NO;
         _nRecordWidth = 640;
         _nRecordHeight = 360;
         _readRtpBuffer = malloc(1600);
@@ -1329,7 +1369,7 @@ static   int   interrupt_cb( void   *para)
         _encodeQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
         nFps = 20;
         _jpgbuffer = NULL;
-        _databuffer = NULL;
+        //_databuffer = NULL;
         
         fileHandle =MP4_INVALID_FILE_HANDLE;
         
@@ -1346,6 +1386,8 @@ static   int   interrupt_cb( void   *para)
         _GKA_Cmd_Socket =[[MySocket alloc] init];
         _GKA_Data_Socket =[[MySocket alloc] init];
         _GKA_Notice_Socket =[[MySocket alloc] init];
+        
+        _GPRTPC_Data_Socket = [[MySocket alloc] init];
         
         
         //_gpSocket = [[MyGPSocket alloc] init];
@@ -1405,6 +1447,7 @@ static   int   interrupt_cb( void   *para)
         self.bPlaying = NO;
         bDisping = NO;
         videoFrames    = [NSMutableArray array];
+        videoFrames_A = [NSMutableArray array];
         ImageArray    = [NSMutableArray array];
         
         m_EncodeID = AV_CODEC_ID_MPEG4;
@@ -1434,7 +1477,7 @@ static   int   interrupt_cb( void   *para)
         m_decodedFrame = NULL;
         m_codecCtx = NULL;
         img_convert_ctx = NULL;
-        img_convert_ctxBmp = NULL;
+        //img_convert_ctxBmp = NULL;
         pFrameYUV = NULL;
         frame_a = NULL;
         //   pFrameRGB = NULL;
@@ -1443,18 +1486,18 @@ static   int   interrupt_cb( void   *para)
         m_codecCtx = NULL;
         //   pFrameRGB= NULL;
         img_convert_ctx= NULL;
-        img_convert_ctxBmp= NULL;
+        //img_convert_ctxBmp= NULL;
         //  m_outsws_ctx = NULL;
         disp_codec = NULL;
         m_YUV_ctx = NULL;
         m_YUV_ctxHalf = NULL;
         av_log_set_level(AV_LOG_QUIET);/*
-        dispatch_async(dispatch_get_global_queue(0, 0), ^{
-            while(YES)
-            {
-                usleep(1000*20);
-            }
-        });
+                                        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                                        while(YES)
+                                        {
+                                        usleep(1000*20);
+                                        }
+                                        });
                                         */
     }
     return self;
@@ -1721,7 +1764,6 @@ static   int   interrupt_cb( void   *para)
             weakself.bPlaying = YES;
             [weakself DecordData_ffmpeg];
         });
-        //return [self naPlay];
         return 0;
     }
     else
@@ -1735,7 +1777,7 @@ static   int   interrupt_cb( void   *para)
         return NO;
     NSLog(@"开始初始化  。。。。");
     
-    if(self.nIC_Type == IC_GPRTSP || self.nIC_Type == IC_GPRTPB)
+    if(self.nIC_Type == IC_GPRTSP || self.nIC_Type == IC_GPRTPB || self.nIC_Type == IC_GPRTPC)
     {
         Byte cmd[7];
         cmd[0]='J';
@@ -1754,7 +1796,7 @@ static   int   interrupt_cb( void   *para)
         [self F_SentUdp:data Server:self.sSerVerIP Port:20000];
     }
     
-    if(self.nIC_Type == IC_GPH264 || self.nIC_Type == IC_GPH264A)
+    if(self.nIC_Type == IC_GPH264 || self.nIC_Type == IC_GPH264A ||  self.nIC_Type == IC_RTLH264)
     {
         Byte cmd[7];
         cmd[0]='J';
@@ -1802,9 +1844,8 @@ static   int   interrupt_cb( void   *para)
     const char *path = [self.sPath cStringUsingEncoding: NSUTF8StringEncoding];
     char bufff[1025];
     memset(bufff,0,1025);
+    
     [self F_SetTimeout:4000];
-    
-    
     err_code = avformat_open_input(&m_formatCtx, path, NULL, NULL);
     if (err_code != 0)
     {
@@ -1823,8 +1864,10 @@ static   int   interrupt_cb( void   *para)
         {
             {
                 m_formatCtx->flags |= AVFMT_FLAG_NOBUFFER;
-                m_formatCtx->probesize =1024*200;
-                m_formatCtx->max_analyze_duration = 100 * AV_TIME_BASE;
+                m_formatCtx->probesize =1024*80;
+                m_formatCtx->max_analyze_duration = 400 * AV_TIME_BASE;
+                 //m_formatCtx->probesize2 = 100 * AV_TIME_BASE;
+                
             }
             if(avformat_find_stream_info(m_formatCtx, NULL) < 0) {
                 NSLog(@"avformat_find_stream_info failed!\n");
@@ -1844,8 +1887,12 @@ static   int   interrupt_cb( void   *para)
     int i=0;
     for(i=0; i<m_formatCtx->nb_streams; i++)
     {
-        //if(m_formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO)
-        if(m_formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
+        AVStream *stream = m_formatCtx->streams[i];
+#ifdef NEW_FFMPEG
+        if(stream->codecpar->codec_type==AVMEDIA_TYPE_VIDEO)
+#else
+        if(stream->codec->codec_type==AVMEDIA_TYPE_VIDEO)
+#endif
         {
             m_videoStream = i;
             videoindex=i;
@@ -1864,8 +1911,11 @@ static   int   interrupt_cb( void   *para)
         return NO;
     }
     
-    
+#ifdef NEW_FFMPEG
     pCodec = avcodec_find_decoder(m_formatCtx->streams[videoindex]->codecpar->codec_id);
+#else
+    pCodec = avcodec_find_decoder(m_formatCtx->streams[videoindex]->codec->codec_id);
+#endif
     
     if(pCodec==NULL) {
         NSLog(@"Unsupported codec!");
@@ -1877,9 +1927,13 @@ static   int   interrupt_cb( void   *para)
         }
         return NO;
     }
-    
+
+#ifdef NEW_FFMPEG
     m_codecCtx = avcodec_alloc_context3(pCodec);
     avcodec_parameters_to_context(m_codecCtx, m_formatCtx->streams[videoindex]->codecpar);
+#else
+    m_codecCtx =m_formatCtx->streams[videoindex]->codec;
+#endif
     
     err_code = avcodec_open2(m_codecCtx, pCodec, NULL);
     
@@ -1896,6 +1950,30 @@ static   int   interrupt_cb( void   *para)
         }
         return NO;
     }
+    
+    
+    int  frame_rate = 0;
+    {
+        AVStream *stream = m_formatCtx->streams[videoindex];
+        
+        if(stream->r_frame_rate.den > 0)
+        {
+            frame_rate = stream->r_frame_rate.num/stream->r_frame_rate.den;
+        }
+        else if(stream->codec->framerate.den > 0)
+        {
+            frame_rate = stream->codec->framerate.num/stream->codec->framerate.den;
+        }
+    }
+    if(frame_rate!=0)
+    {
+        _nDelaymsPlay = 1000/frame_rate;
+        NSLog(@"Frame_rage = %d delayms = %d",frame_rate,_nDelaymsPlay);
+    }
+    
+    
+    
+    
     m_decodedFrame=av_frame_alloc();
     [self F_InitFrame];
     NSLog(@"开始播放。。。");
@@ -1929,9 +2007,11 @@ static   int   interrupt_cb( void   *para)
 -(int)F_GP_SetLanguage:(Byte)nLanguage
 {
     
+    
     if(!self.sSerVerIP)
     {
-        [self F_GetServerIP];
+        [self F_GetDeviceType];
+        //[self F_GetServerIP];
     }
     
     Byte cmd[10];
@@ -2129,30 +2209,49 @@ static   int   interrupt_cb( void   *para)
     return [self naInit_:sPath];
 }
 
+-(void)F_SetnRTL_RTC_Time
+{
+    int len=0;
+    char sHead[]="AMEBA:DISCOVER:";
+    uint8_t data[1000];
+    memset(data,0,1000);
+    
+    len =(int)strlen(sHead);
+    memcpy(data,sHead,len);
+    
+    int64_t time  = av_gettime()/1000;
+    sprintf((char *)(data+len), "%lld",(long long)time); //将100转为16进制表示的字符串。
+    len = (int)strlen((char *)data);
+    len+=1;
+    //send_cmd_udp(data,len, sServerIP.c_str(), 49152);
+    NSData *data_C = [[NSData  alloc] initWithBytes:data length:len];
+    [self F_SentUdp:data_C Server:self.sSerVerIP Port:49152];
+    
+}
+
 -(BOOL)naInit_:(NSString *)sPath
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         [UIApplication sharedApplication].idleTimerDisabled = YES;
     });
-    m_bSaveVideo = false;
-    AVFrame *mFrame = av_frame_alloc();
     
-    mFrame->width=_nRecordWidth;
-    mFrame->height=_nRecordHeight;
-    av_image_alloc(
-                   mFrame->data, mFrame->linesize, _nRecordWidth,
-                   _nRecordHeight,
-                   AV_PIX_FMT_YUV420P, 4);
-    av_freep(mFrame->data);
-    av_frame_free(&mFrame);
+    _nDelaymsPlay = 0;
+    
+    
+    m_bSaveVideo = false;
     
     NSString *sPat =[sPath stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     sPat = [sPat lowercaseString];
     
-    IC_TYPE SetIcType = [self F_GetType_];
-    if(SetIcType == IC_NO)
+    BOOL  bisLocalFile = [sPat hasPrefix:@"file://"];
+    
+    [self F_GetDeviceType];
+    
+    if(self.nIC_Type == IC_NO && !bisLocalFile)
         return NO;
-    [self F_AdjType:sPat];
+    
+    if(!bisLocalFile)
+        [self F_AdjType:sPat];
     
     if(pFrameSnap !=NULL)
     {
@@ -2160,37 +2259,6 @@ static   int   interrupt_cb( void   *para)
         av_frame_free(&pFrameSnap);
         pFrameSnap = NULL;
     }
-    
-    /*
-     [self SetIcType:SetIcType];
-     
-     if([sPat hasPrefix:@"rtsp://192.168.25.1"])
-     {
-     self.sWifiIP = @"192.168.25.";
-     self.sSerVerIP =@"192.168.25.1";
-     SetIcType = IC_GPRTSP;
-     }
-     if([sPat hasPrefix:@"rtsp://192.168.26.1"])
-     {
-     self.sWifiIP = @"192.168.26.";
-     self.sSerVerIP =@"192.168.26.1";
-     SetIcType = IC_GPRTSP;
-     }
-     
-     if([sPat hasPrefix:@"http://192.168.25.1"])
-     {
-     self.sWifiIP = @"192.168.25.";
-     self.sSerVerIP =@"192.168.25.1";
-     SetIcType = IC_GP;
-     }
-     if([sPat hasPrefix:@"http://192.168.26.1"])
-     {
-     self.sWifiIP = @"192.168.26.";
-     self.sSerVerIP =@"192.168.26.1";
-     SetIcType = IC_GP;
-     }
-     */
-    
     
     [self F_StartChecknetWrok:[self.sSerVerIP cStringUsingEncoding: NSUTF8StringEncoding]];
     
@@ -2224,8 +2292,48 @@ static   int   interrupt_cb( void   *para)
     self.bExit = false;
     [self F_SetChekRelink:80];
     [self F_CheckConnect_AA];
+    
+    [self F_StratListenat20000];
+    
+    
     __weak JH_WifiCamera *weakself = self;
-    [weakself F_StratListenat20000];
+    
+    if(self.nIC_Type == IC_RTLH264)  //发送 时间给模块，同步模块时间
+    {
+        [self F_SetnRTL_RTC_Time];
+        usleep(1000*50);
+        [self F_SetnRTL_RTC_Time];
+    }
+    
+    if(self.nIC_Type == IC_GPRTPC)
+    {
+        NSLog(@"Init GPRTP&C....");
+        nFps = 20;
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            [weakself F_SetChekRelink:200];
+            [weakself InitMediaSN:YES];
+            weakself.bIsWifi = YES;
+            weakself.bOpenOK = YES;
+            weakself.nRelinkTime = 0;
+            //[weakself F_StartCheckConnect];
+            [weakself F_SentRTPHeartBeep];
+            usleep(1000*5);
+            [weakself F_SentRTPHeartBeep];
+            [weakself F_GP_InitA];
+            if([weakself ConnectedGPRTPC]==0)
+            {
+                [weakself F_SetChekRelink:100];
+                [weakself F_StartCheckConnect];
+                [weakself F_SentRTPHeartBeep];
+                NSLog(@"Connectend RTPC...");
+            }
+            else
+            {
+                NSLog(@"Connectend RTPC fail...");
+            }
+        });
+        return YES;
+    }
     
     if(self.nIC_Type == IC_GPRTP|| self.nIC_Type == IC_GPRTPB )
     {
@@ -2250,7 +2358,7 @@ static   int   interrupt_cb( void   *para)
         return YES;
     }
     
-    if(self.nIC_Type == IC_GPH264A)
+    if(self.nIC_Type == IC_GPH264A || self.nIC_Type == IC_RTLH264)
     {
         NSLog(@"Init H264A....");
         nFps = 20;
@@ -2387,11 +2495,11 @@ static   int   interrupt_cb( void   *para)
     
     nRotation = n;
     /*
-    _nRota=n;
-    if(self.dispView)
-    {
-        [self.dispView SetRotation:_nRota];
-    }
+     _nRota=n;
+     if(self.dispView)
+     {
+     [self.dispView SetRotation:_nRota];
+     }
      */
 }
 -(BOOL)naSentCmd:(NSData *)data
@@ -2518,13 +2626,14 @@ static   int   interrupt_cb( void   *para)
 
 -(void)F_SentUdp:(NSData *)dat Server:(NSString *)sServer Port:(int)nPort
 {
-    if(sServer==nil)
+    if(!sServer)
+        return;
+    if(sServer.length<6)
         return;
     int clientSocketId;
     ssize_t len;
     socklen_t addrlen;
     struct sockaddr_in client_sockaddr;
-    // 第一步：创建Socket
     clientSocketId = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if(clientSocketId < 0) {
         NSLog(@"creat client socket fail\n");
@@ -2533,7 +2642,6 @@ static   int   interrupt_cb( void   *para)
     
     int set = 1;
     setsockopt(clientSocketId, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
-    
     int err=0;
     addrlen = sizeof(struct sockaddr_in);
     bzero(&client_sockaddr, addrlen);
@@ -2547,7 +2655,6 @@ static   int   interrupt_cb( void   *para)
         ;
     } else {
         err = errno;
-        // NSLog(@"发送失败a errno=%d %@",err,sServer);
     }
     close(clientSocketId);
 }
@@ -2620,7 +2727,7 @@ static   int   interrupt_cb( void   *para)
 
 -(void)F_CheckConnect_AA
 {
-    
+#if 1
 #ifdef D_Check_Relinker
     
     __weak JH_WifiCamera *weakself = self;
@@ -2672,6 +2779,7 @@ static   int   interrupt_cb( void   *para)
         
     });
 #endif
+#endif
 }
 
 
@@ -2712,7 +2820,18 @@ static   int   interrupt_cb( void   *para)
 {
     
     @synchronized (self) {
+        
+        
+        while(videoFrames_A.count>=3)
+        {
+            MyFrame *tempFrame = videoFrames_A[0];
+            [videoFrames_A removeObjectAtIndex:0];
+            av_freep(&(tempFrame->pFrame->data[0]));
+            av_frame_free(&(tempFrame->pFrame));
+        }
+        
         _bRead20000 = NO;
+        [self stopReceive];
         usleep(1000*50);
         if(_socket_udp20000>0)
         {
@@ -2734,12 +2853,12 @@ static   int   interrupt_cb( void   *para)
            || self.nIC_Type == IC_GPRTP
            || self.nIC_Type == IC_SN
            || self.nIC_Type == IC_GPRTPB
-           || self.nIC_Type == IC_GPH264A)
+           || self.nIC_Type == IC_GPRTPC
+           || self.nIC_Type == IC_GPH264A
+           || self.nIC_Type == IC_RTLH264)
         {
-            
-            [self stopReceive];
-            usleep(1000*15);
             [self closeVideoSocket];
+            usleep(1000*50);
             //[self  naStopSaveVideo];
             [self DisConnect];
             self.bPlaying = NO;
@@ -2782,16 +2901,6 @@ static   int   interrupt_cb( void   *para)
                     }
                 }
             });
-            /*
-            if(_bRecroding)
-            {
-                self.nSdStatus |=LocalRecording;
-                m_bSaveVideo = YES;
-                dispatch_async(dispatch_get_global_queue(0, 0), ^{
-                    [weakself writeVideo];
-                });
-            }
-             */
             return;
         }
         [self F_GP_StopGetStatus];
@@ -2824,7 +2933,6 @@ static   int   interrupt_cb( void   *para)
                     [weakself  F_DispBack:weakself.dispBackImg];
             });
         }
-        // [self.videoFrames_bak removeAllObjects];
     }
     
 }
@@ -3492,17 +3600,17 @@ static   int   interrupt_cb( void   *para)
             sws_freeContext(img_convert_ctx);
             img_convert_ctx = NULL;
         }
-        if(img_convert_ctxBmp!=NULL)
-        {
-            sws_freeContext(img_convert_ctxBmp);
-            img_convert_ctxBmp = NULL;
-        }
+//        if(img_convert_ctxBmp!=NULL)
+//        {
+//            sws_freeContext(img_convert_ctxBmp);
+//            img_convert_ctxBmp = NULL;
+//        }
         /*
-        if(img_convert_ctx_half!=NULL)
-        {
-            sws_freeContext(img_convert_ctx_half);
-            img_convert_ctx_half = NULL;
-        }
+         if(img_convert_ctx_half!=NULL)
+         {
+         sws_freeContext(img_convert_ctx_half);
+         img_convert_ctx_half = NULL;
+         }
          */
         
         
@@ -3753,17 +3861,17 @@ static   int   interrupt_cb( void   *para)
                         b = (int) (ap * df.b + (1 - ap) * (*buffer).b);
                         
                         if(r>255)
-                        r = 255;
+                            r = 255;
                         if(r<0)
-                        r=0;
+                            r=0;
                         if(g>255)
-                        g = 255;
+                            g = 255;
                         if(g<0)
-                        g=0;
+                            g=0;
                         if(b>255)
-                        b = 255;
+                            b = 255;
                         if(b<0)
-                        b=0;
+                            b=0;
                         (*buffer).r = (uint8)r;
                         (*buffer).g = (uint8)g;
                         (*buffer).b = (uint8)b;
@@ -3773,10 +3881,10 @@ static   int   interrupt_cb( void   *para)
             }
             pbuffer = pbufferA;
             ABGRToI420((uint8_t *) pbuffer, myframe1->width * 4,
-                                     myframe1->data[0], myframe1->linesize[0],
-                                     myframe1->data[1], myframe1->linesize[1],
-                                     myframe1->data[2], myframe1->linesize[2],
-                                     myframe1->width, myframe1->height);
+                       myframe1->data[0], myframe1->linesize[0],
+                       myframe1->data[1], myframe1->linesize[1],
+                       myframe1->data[2], myframe1->linesize[2],
+                       myframe1->width, myframe1->height);
             
         }
         free(pbufferA);
@@ -3837,16 +3945,28 @@ static   int   interrupt_cb( void   *para)
     av_image_alloc(tmpFrame1->data, tmpFrame1->linesize, _nRecordWidth,
                    _nRecordHeight,
                    AV_PIX_FMT_YUV420P,4);
-    
-    I420Scale(frame->data[0], frame->linesize[0],
-              frame->data[1], frame->linesize[1],
-              frame->data[2], frame->linesize[2],
-              frame->width,frame->height,
-              tmpFrame1->data[0], tmpFrame1->linesize[0],
-              tmpFrame1->data[1], tmpFrame1->linesize[1],
-              tmpFrame1->data[2], tmpFrame1->linesize[2],
-              _nRecordWidth,_nRecordHeight,
-              kFilterBilinear);
+    if(frame->width == _nRecordWidth && frame->height == _nRecordHeight)
+    {
+        I420Copy(frame->data[0], frame->linesize[0],
+                 frame->data[1], frame->linesize[1],
+                 frame->data[2], frame->linesize[2],
+                 tmpFrame1->data[0], tmpFrame1->linesize[0],
+                 tmpFrame1->data[1], tmpFrame1->linesize[1],
+                 tmpFrame1->data[2], tmpFrame1->linesize[2],
+                 _nRecordWidth, _nRecordHeight);
+    }
+    else
+    {
+        I420Scale(frame->data[0], frame->linesize[0],
+                  frame->data[1], frame->linesize[1],
+                  frame->data[2], frame->linesize[2],
+                  frame->width,frame->height,
+                  tmpFrame1->data[0], tmpFrame1->linesize[0],
+                  tmpFrame1->data[1], tmpFrame1->linesize[1],
+                  tmpFrame1->data[2], tmpFrame1->linesize[2],
+                  _nRecordWidth,_nRecordHeight,
+                  kFilterBox);
+    }
     {
         UIImage *myimage=nil;
         if(self.bNeedSave2Photo && self.bSaveCompelete && bSave)
@@ -3971,7 +4091,9 @@ static   int   interrupt_cb( void   *para)
     
     if([self.delegate respondsToSelector:@selector(ReceiveImg:)])
     {
-        [self.delegate ReceiveImg: [self YUVtoUIImage:frame SAVE:NO]];
+        @autoreleasepool {
+            [self.delegate ReceiveImg: [self YUVtoUIImage:frame SAVE:NO]];
+        }
         return 0;
     }
     
@@ -4049,7 +4171,7 @@ static   int   interrupt_cb( void   *para)
                  }
              }
          }
-                         failure:^(NSError *error)
+                                failure:^(NSError *error)
          {
              //NSLog(@"%s: Error  :  %@",
              //      __PRETTY_FUNCTION__,  [error localizedDescription]);
@@ -4094,10 +4216,10 @@ uint8_t MP4AdtsFindSamplingRateIndex(uint32_t samplingRate)
     return NUM_ADTS_SAMPLING_RATES - 1;
 }
 bool MY_MP4AacGetConfiguration(uint8_t** ppConfig,
-                            uint32_t* pConfigLength,
-                            uint8_t profile,
-                            uint32_t samplingRate,
-                            uint8_t channels)
+                               uint32_t* pConfigLength,
+                               uint8_t profile,
+                               uint32_t samplingRate,
+                               uint8_t channels)
 {
     /* create the appropriate decoder config */
     
@@ -4128,7 +4250,7 @@ bool MY_MP4AacGetConfiguration(uint8_t** ppConfig,
     BOOL success;
     NSError* error;
     //success = [_session setCategory:AVAudioSessionCategoryRecord withOptions:0 error:&error];
-      success = [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionMixWithOthers error:&error];
+    success = [_session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionMixWithOthers error:&error];
     {
         [_session setPreferredIOBufferDuration:0.01 error:&error];   //5ms采集一次
         [_session setPreferredSampleRate:44100 error:&error];         //需和XDXRecorder中对应
@@ -4302,10 +4424,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 int samplesPerSecond = 44100;
                 int profile = 2; //AAC_LC
                 /* AAC object types */
-//#defineMAIN 1
-//#defineLOW  2
-//#defineSSR  3
-//#defineLTP  4
+                //#defineMAIN 1
+                //#defineLOW  2
+                //#defineSSR  3
+                //#defineLTP  4
                 int channelConfig = 2;
                 uint8_t *pConfig = NULL;
                 uint32_t configLength = 0;
@@ -4422,7 +4544,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     // 设置编码码率(比特率)，如果不设置，默认将会以很低的码率编码，导致编码出来的视频很模糊
     status  = VTSessionSetProperty(_encodeSesion, kVTCompressionPropertyKey_AverageBitRate, (__bridge CFTypeRef)@(bt)); // bps
-    status += VTSessionSetProperty(_encodeSesion, kVTCompressionPropertyKey_DataRateLimits, (__bridge CFArrayRef)@[@(bt*2/8), @1]); // Bps
+    status = VTSessionSetProperty(_encodeSesion, kVTCompressionPropertyKey_DataRateLimits, (__bridge CFArrayRef)@[@(bt*2/8), @1]); // Bps
     NSLog(@"set bitrate   return: %d", (int)status);
     
     // 设置帧率，只用于初始化session，不是实际FPS
@@ -4619,21 +4741,21 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             continue;
         }
         /*
-        if(_nDispWidth != _nRecordWidth ||
-           _nDispHeight != _nRecordHeight)
-        {
-            I420Scale(pFrame_Copy->data[0], pFrame_Copy->linesize[0],
-                      pFrame_Copy->data[1], pFrame_Copy->linesize[1],
-                      pFrame_Copy->data[2], pFrame_Copy->linesize[2],
-                      _nDispWidth,_nDispHeight,
-                      mFrame->data[0], mFrame->linesize[0],
-                      mFrame->data[1], mFrame->linesize[1],
-                      mFrame->data[2], mFrame->linesize[2],
-                      _nRecordWidth, _nRecordHeight,
-                      kFilterLinear);
-            mWriteFrame =  mFrame;
-        }
-        else
+         if(_nDispWidth != _nRecordWidth ||
+         _nDispHeight != _nRecordHeight)
+         {
+         I420Scale(pFrame_Copy->data[0], pFrame_Copy->linesize[0],
+         pFrame_Copy->data[1], pFrame_Copy->linesize[1],
+         pFrame_Copy->data[2], pFrame_Copy->linesize[2],
+         _nDispWidth,_nDispHeight,
+         mFrame->data[0], mFrame->linesize[0],
+         mFrame->data[1], mFrame->linesize[1],
+         mFrame->data[2], mFrame->linesize[2],
+         _nRecordWidth, _nRecordHeight,
+         kFilterLinear);
+         mWriteFrame =  mFrame;
+         }
+         else
          */
         {
             /*
@@ -5938,33 +6060,16 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     
     //chinwei 20160503
-#if 0
+#if 1
+    int nRecvBuf=128*1024;//设置为32K
+    setsockopt(_videofd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+    
     int value = 1;
     int status = 0;
     
     status = setsockopt(self.videofd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
-    /*
-     if (status) {
-     fprintf(stderr, "SO_REUSEADDR failed! (%s)\n", strerror(errno));
-     shutdown(self.videofd, 2);
-     close(self.videofd);
-     self.videofd = -1;
-     return -3;
-     
-     }
-     */
     value = 1;
     status = setsockopt(self.videofd, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value));
-    /*
-     if (status) {
-     fprintf(stderr, "SO_REUSEPORT failed! (%s)\n", strerror(errno));
-     shutdown(self.videofd, 2);
-     close(self.videofd);
-     self.videofd = -1;
-     return -4;
-     
-     }
-     */
     
 #endif
     if (bind(self.videofd, (struct sockaddr *)&myaddr,sizeof(myaddr)) < 0) {
@@ -5978,6 +6083,23 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     return 0;
 }
 
+
+-(void)sortA2
+{
+    int i, j, temp;
+    int length = 5;
+    for(i = 0; i < length; ++i){
+        for(j = length - 1; j > i; --j){
+            if(m_InxArray[j] < m_InxArray[j - 1]){
+                temp = m_InxArray[j];
+                m_InxArray[j] = m_InxArray[j - 1];
+                m_InxArray[j - 1] = temp;
+            }
+        }
+    }
+}
+
+
 -(JPEG_BUFFER *)F_FindJpegBuffer:(int)njpginx
 {
     if(self.jpg0.nJpegInx == njpginx)
@@ -5986,6 +6108,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         return self.jpg1;
     else if(self.jpg2.nJpegInx == njpginx)
         return self.jpg2;
+    else if(self.jpg3.nJpegInx == njpginx)
+        return self.jpg3;
+    else if(self.jpg4.nJpegInx == njpginx)
+        return self.jpg4;
     else if(self.jpg0.nJpegInx == 0) {
         [self.jpg0 Clear];
         return self.jpg0;
@@ -5998,41 +6124,283 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         [self.jpg2 Clear];
         return self.jpg2;
     }
+    else if(self.jpg3.nJpegInx == 0) {
+        [self.jpg3 Clear];
+        return self.jpg3;
+    }
+    else if(self.jpg4.nJpegInx == 0) {
+        [self.jpg4 Clear];
+        return self.jpg4;
+    }
     else
     {
+        
         int ix0= self.jpg0.nJpegInx;
         int ix1= self.jpg1.nJpegInx;
         int ix2= self.jpg2.nJpegInx;
-        if(ix0>ix1)
+        int ix3= self.jpg3.nJpegInx;
+        
+        m_InxArray[0] = self.jpg0.nJpegInx;
+        m_InxArray[1] = self.jpg1.nJpegInx;
+        m_InxArray[2] = self.jpg2.nJpegInx;
+        m_InxArray[3] = self.jpg3.nJpegInx;
+        m_InxArray[4] = self.jpg4.nJpegInx;
+        
+        [self sortA2];
+      //  NSLog(@"sort : %d   %d    %d  %d    %d  rev = %d",m_InxArray[0],m_InxArray[1],m_InxArray[2],m_InxArray[3],m_InxArray[4],njpginx);
+        if(m_InxArray[0] == ix0)
         {
-            if(ix1>ix2)
-            {
-                [self.jpg2 Clear];
-                return self.jpg2;
-            }
-            else
-            {
-                [self.jpg1 Clear];
-                return self.jpg1;
-            }
+            [self.jpg0 Clear];
+            return self.jpg0;
         }
-        else
+        else if(m_InxArray[0] == ix1)
         {
-            if(ix0<ix2)
-            {
-                [self.jpg0 Clear];
-                return self.jpg0;
-            }
-            else
-            {
-                [self.jpg2 Clear];
-                return self.jpg2;
-            }
+            [self.jpg1 Clear];
+            return self.jpg1;
         }
+        else if(m_InxArray[0] == ix2)
+        {
+            [self.jpg2 Clear];
+            return self.jpg2;
+        }
+        else if(m_InxArray[0] == ix3)
+        {
+            [self.jpg3 Clear];
+            return self.jpg3;
+        }
+        else{
+            [self.jpg4 Clear];
+            return self.jpg4;
+        }
+        
+        /*
+         int ix0= self.jpg0.nJpegInx;
+         int ix1= self.jpg1.nJpegInx;
+         int ix2= self.jpg2.nJpegInx;
+         if(ix0>ix1)
+         {
+         if(ix1>ix2)
+         {
+         [self.jpg2 Clear];
+         return self.jpg2;
+         }
+         else
+         {
+         [self.jpg1 Clear];
+         return self.jpg1;
+         }
+         }
+         else
+         {
+         if(ix0<ix2)
+         {
+         [self.jpg0 Clear];
+         return self.jpg0;
+         }
+         else
+         {
+         [self.jpg2 Clear];
+         return self.jpg2;
+         }
+         }
+         */
     }
 }
 
 
+
+-(BOOL)F_FindJpg
+{
+    if(self.jpg0.nCount<4)
+        return NO;
+    
+    _nJpgStart = -1;
+    _nJpgEnd  = -1;
+#if 1
+    for (uint32_t i = 0; i < self.jpg0.nCount; i++) {
+        if (self.jpg0.buffer[i] == 0xFF && self.jpg0.buffer[i + 1] == 0xD9) {
+            _nJpgEnd = i;
+            break;
+        }
+    }
+    if(_nJpgEnd >= 0)
+    {
+        
+        for (uint32_t i = 0; i < _nJpgEnd; i++) {
+            if (self.jpg0.buffer[i] == 0xFF && self.jpg0.buffer[i + 1] == 0xD8) {
+                _nJpgStart = i;
+                break;
+            }
+        }
+        
+        if(_nJpgStart>=0)
+        {
+            return YES;
+        }
+        else
+        {
+            [self.jpg0 Clear];
+            _nJpgStart=-1;
+            _nJpgEnd = -1;
+        }
+    }
+    return NO;
+    
+#else
+    for(uint32_t i=0;i<self.jpg0.nCount;i++)
+    {
+        if(self.jpg0.buffer[i]==0xFF && self.jpg0.buffer[i+1]==0xD8)
+        {
+            _nJpgStart = i;
+            break;
+        }
+    }
+    
+    for(uint32_t i=0;i<self.jpg0.nCount;i++)
+    {
+        if(self.jpg0.buffer[i]==0xFF && self.jpg0.buffer[i+1]==0xD9)
+        {
+            _nJpgEnd = i;
+            break;
+        }
+    }
+    if(_nJpgStart >=0 && _nJpgEnd >= 0 && _nJpgEnd>_nJpgStart)
+    {
+        return YES;
+    }
+    return NO;
+#endif
+}
+
+-(uint32_t)F_FindHead:(int)nLen
+{
+    if(nLen<2)
+        return -1;
+    
+    for(uint32_t i=0;i<nLen;i++)
+    {
+        if(_pBuffer[i]==0xFF && _pBuffer[i+1]==0xD8)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+-(int32_t)F_FindEnd:(int)nLen
+{
+    if(nLen<2)
+        return -1;
+    
+    for(int32_t i=0;i<nLen;i++)
+    {
+        if(_pBuffer[i]==0xFF && _pBuffer[i+1]==0xD9)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+-(void)F_StartReadData_GPRTPC
+{
+    
+    __weak  typeof(self) weakself = self;
+    NSLog(@"Start read RTPC data~~~");
+    
+    
+    if(self.jpg0==nil)
+    {
+        self.jpg0 = [[JPEG_BUFFER alloc] init];
+    }
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0), ^{
+        struct timeval tv;
+        fd_set read_fd;
+        int nbytes;
+        weakself.nJpgStart = -1;
+        weakself.nJpgEnd = -1;
+        uint8_t  *pbuffer = malloc(500*1024);
+        [weakself.jpg0 Clear];
+        int nJpgStart;
+        int nJpgEnd;
+        
+        
+        while(!weakself.isCancelled)
+        {
+            tv.tv_sec = 0;
+            tv.tv_usec = 500*1;
+            FD_ZERO(&read_fd);
+            FD_SET(weakself.GPRTPC_Data_Socket.socketfd, &read_fd);
+            int ret=select(weakself.GPRTPC_Data_Socket.socketfd + 1, &read_fd, NULL, NULL, &tv);
+            if(ret>0)
+            {
+                if (FD_ISSET(weakself.GPRTPC_Data_Socket.socketfd, &read_fd))
+                {
+                    nbytes = (int)recv(weakself.GPRTPC_Data_Socket.socketfd,weakself.pBuffer,(size_t)VideoPackLen,(int)0);
+                    if(nbytes>0)
+                    {
+                        [weakself.packetLock lock];
+                        weakself.nRelinkTime = 0;
+                        [weakself.packetLock unlock];
+                        if(weakself.nIC_Type == IC_GPRTPC)
+                        {
+                            
+                            if([weakself.jpg0 AppendData:weakself.pBuffer Length:nbytes])
+                            {
+                                if([weakself F_FindJpg])
+                                {
+                                    @autoreleasepool
+                                    {
+                                        int nLen = weakself.jpg0.nCount;
+                                        nJpgStart =weakself.nJpgStart;
+                                        nJpgEnd = weakself.nJpgEnd;
+                                        uint8_t *buffer = weakself.jpg0.buffer;
+                                        NSData *frame_ = [NSData dataWithBytes:buffer+nJpgStart length:nJpgEnd-nJpgStart+2];
+                                        [weakself DecordData_Mjpeg:frame_];
+                                        if(nLen-nJpgEnd-2>0)
+                                        {
+                                            memcpy(pbuffer, buffer+nJpgEnd+2, nLen-nJpgEnd-2);
+                                            [weakself.jpg0 Clear];
+                                            [weakself.jpg0 AppendData:pbuffer Length:nLen-nJpgEnd-2];
+                                        }
+                                        else
+                                        {
+                                            [weakself.jpg0 Clear];
+                                        }
+                                        weakself.nJpgStart=-1;
+                                        weakself.nJpgEnd = -1;
+                                    }
+                                }
+                                
+                            }
+                            else
+                            {
+                                NSLog(@"Not Find!!!");
+                                [weakself.jpg0 Clear];
+                                weakself.nJpgStart=-1;
+                                weakself.nJpgEnd = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            usleep(500);
+        }
+        
+        
+        if(pbuffer!=NULL)
+        {
+            free(pbuffer);
+        }
+        NSLog(@"Exit ReadData GPRTPC  Thread!");
+    });
+    
+    
+
+}
 
 -(void)doReceiveGPRTP
 {
@@ -6052,27 +6420,59 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         {
             self.jpg2 = [[JPEG_BUFFER alloc] init];
         }
+        if(self.jpg3==nil)
+        {
+            self.jpg3 = [[JPEG_BUFFER alloc] init];
+        }
+        if(self.jpg4==nil)
+        {
+            self.jpg4 = [[JPEG_BUFFER alloc] init];
+        }
     }
-    
     
     if(_jpgbuffer!=NULL)
     {
         free(_jpgbuffer);
         _jpgbuffer=NULL;
     }
-    if(_databuffer!=NULL)
-    {
-        free(_databuffer);
-        _databuffer=NULL;
-    }
-    _databuffer =(char *) malloc(1450*32);   //new char[1450*32];
-    int LEN_Buffer = (1280*720*3)/2;
+    /*
+     if(_databuffer!=NULL)
+     {
+     free(_databuffer);
+     _databuffer=NULL;
+     }
+     _databuffer =(char *) malloc(1450*32);   //new char[1450*32];
+     */
+    
+    int LEN_Buffer = (1920*1080*3);
     _jpgbuffer = (char *) malloc(LEN_Buffer);
     __block int64_t  nTime1_pre=av_gettime()/1000;
     __block int64_t  nTime1_current;
     
     _isCancelled = NO;
     __weak JH_WifiCamera  *weakself = self;
+    
+    __block  BOOL  bStart=NO;
+    NSComparator cmptr = ^(id obj1a, id obj2a){
+        NSData *obj1 = (NSData *)obj1a;
+        NSData *obj2 = (NSData *)obj2a;
+        Byte  *t1;
+        Byte *t2;
+        t1 =(Byte *)[obj1 bytes];
+        t2 =(Byte *)[obj2 bytes];
+        uint16_t i1 = t1[3]+t1[2]*0x100;
+        uint16_t i2 = t2[3]+t2[2]*0x100;
+        if (i1 > i2) {
+            return (NSComparisonResult)NSOrderedDescending;
+        }
+        else if (i1 < i2) {
+            return (NSComparisonResult)NSOrderedAscending;
+        }
+        else
+            return (NSComparisonResult)NSOrderedSame;
+    };
+    
+    
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         int size;
         NSMutableArray *dataList = [[NSMutableArray alloc] init];
@@ -6082,25 +6482,28 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         tv.tv_usec = 1000*5;
         fd_set read_fd;
         ssize_t nbytes;
-        __block  BOOL  bStart=NO;
-        NSComparator cmptr = ^(id obj1a, id obj2a){
-            NSData *obj1 = (NSData *)obj1a;
-            NSData *obj2 = (NSData *)obj2a;
-            Byte  *t1;
-            Byte *t2;
-            t1 =(Byte *)[obj1 bytes];
-            t2 =(Byte *)[obj2 bytes];
-            uint16_t i1 = t1[3]+t1[2]*0x100;
-            uint16_t i2 = t2[3]+t2[2]*0x100;
-            if (i1 > i2) {
-                return (NSComparisonResult)NSOrderedDescending;
-            }
-            else if (i1 < i2) {
-                return (NSComparisonResult)NSOrderedAscending;
-            }
-            else
-                return (NSComparisonResult)NSOrderedSame;
-        };
+        /*
+         __block  BOOL  bStart=NO;
+         NSComparator cmptr = ^(id obj1a, id obj2a){
+         NSData *obj1 = (NSData *)obj1a;
+         NSData *obj2 = (NSData *)obj2a;
+         Byte  *t1;
+         Byte *t2;
+         t1 =(Byte *)[obj1 bytes];
+         t2 =(Byte *)[obj2 bytes];
+         uint16_t i1 = t1[3]+t1[2]*0x100;
+         uint16_t i2 = t2[3]+t2[2]*0x100;
+         if (i1 > i2) {
+         return (NSComparisonResult)NSOrderedDescending;
+         }
+         else if (i1 < i2) {
+         return (NSComparisonResult)NSOrderedAscending;
+         }
+         else
+         return (NSComparisonResult)NSOrderedSame;
+         };
+         
+         */
         NSData  *dataB;
         
         uint16_t jpginx=0;
@@ -6111,14 +6514,15 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         while (!weakself.isCancelled)
         {
             memset(&servaddr, 0, sizeof(servaddr));
+            
             nTime1_current = av_gettime()/1000;
-            if(nTime1_current-nTime1_pre>1000*2)
+            if(nTime1_current-nTime1_pre>1500*2)
             {
                 [weakself F_SentRTPHeartBeep];
                 nTime1_pre = nTime1_current;
             }
             tv.tv_sec = 0;
-            tv.tv_usec = 1000*5;
+            tv.tv_usec = 500*1;
             FD_ZERO(&read_fd);
             FD_SET(weakself.videofd, &read_fd);
             int ret=select(weakself.videofd + 1, &read_fd, NULL, NULL, &tv);
@@ -6128,9 +6532,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 {
                     size = sizeof(servaddr);
                     nbytes = recvfrom(weakself.videofd, weakself.readRtpBuffer, 1600, 0, (struct sockaddr*)&servaddr, (socklen_t *)&size);
-                    [weakself.packetLock lock];
-                    weakself.nRelinkTime = 0;
-                    [weakself.packetLock unlock];
+                    [self.packetLock lock];
+                    self.nRelinkTime = 0;
+                    [self.packetLock unlock];
+                    
                     if(self.nIC_Type == IC_GPRTPB)
                     {
 #if 1
@@ -6140,8 +6545,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                 jpginx =  weakself.readRtpBuffer[1] * 0x100 + weakself.readRtpBuffer[0];
                                 jpg_pack_count = (uint8_t) weakself.readRtpBuffer[2];
                                 jpg_udp_inx = (uint8_t) weakself.readRtpBuffer[3];
-                                if(jpg_udp_inx>100)
+                                if(jpg_udp_inx>200)
+                                {
+                                    NSLog(@"Over inx!!!!!");
                                     continue;
+                                }
                                 JPEG_BUFFER *jpg = [self F_FindJpegBuffer:jpginx];
                                 if(jpg.nJpegInx== 0 || jpg.nJpegInx == jpginx) {
                                     jpg.nJpegInx = jpginx;
@@ -6150,13 +6558,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                 {
                                     NSLog(@"Find packed error!");
                                 }
-                                if (jpg_udp_inx * (1045-8) + (1450-8) < 400*1024)   //60*1024
+                                //if (jpg_udp_inx * (1045-8) + (1450-8) < 500*1024)   //500*1024
+                                if (jpg_udp_inx * (1450-8) + (1450-8) < 500*1024)   //500*1024
                                 {
                                     if(jpg->mInx[jpg_udp_inx] == 0)
                                     {
                                         jpg->mInx[jpg_udp_inx] = 1;
                                         
-                                        if(jpg_udp_inx * (1450 - 8)+1450 - 8 < 400*1024)     //防止图片太大出现溢出
+                                        if(jpg_udp_inx * (1450 - 8)+1450 - 8 < 500*1024)     //防止图片太大出现溢出
                                         {
                                             memcpy(jpg.buffer + jpg_udp_inx * (1450 - 8), weakself.readRtpBuffer + 8,1450 - 8);
                                         }
@@ -6165,8 +6574,9 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                     else
                                     {
                                         ;
-                                        // NSLog(@"Duplicate Recivied  packet  %d of %d",jpg_udp_inx,jpginx);
+                                        //NSLog(@"Duplicate Recivied  packet  %d of %d",jpg_udp_inx,jpginx);
                                     }
+                                    
                                     if (jpg.nCount >= jpg_pack_count)
                                     {
                                         bool bOK=true;
@@ -6175,27 +6585,24 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                                             if(jpg->mInx[ix]==0)
                                             {
                                                 bOK=false;
+                                                NSLog(@"Loss packed!");
                                                 break;
                                             }
                                         }
                                         if(bOK)
                                         {
-                                            //NSData *frame_ = [NSData  dataWithBytes:jpg.buffer length:jpg_pack_count * (1450 - 8)];
                                             @autoreleasepool
                                             {
                                                 NSData *frame_ = [NSData dataWithBytes:jpg.buffer length:jpg_pack_count * (1450 - 8)];
                                                 [weakself DecordData_Mjpeg:frame_];
+                                                //NSLog(@"RevFrame!!!!");
                                             }
-                                            //NSLog(@"GetData-----------");
-                                            
-                                            
                                         }
                                         else
                                         {
                                             NSLog(@"receive error!");
                                         }
                                         [jpg Clear];
-                                        
                                     }
                                 }
                                 
@@ -6309,18 +6716,19 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             free(weakself.jpgbuffer);
             weakself.jpgbuffer=NULL;
         }
-        if(weakself.databuffer!=NULL)
-        {
-            free(weakself.databuffer);
-            weakself.databuffer=NULL;
-        }
-        
+        /*
+         if(weakself.databuffer!=NULL)
+         {
+         free(weakself.databuffer);
+         weakself.databuffer=NULL;
+         }
+         */
         [datalistDisp removeAllObjects];
         [dataList removeAllObjects];
         NSLog(@"Exit ReadThread");
         
     });
-
+    
 }
 
 
@@ -6346,7 +6754,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)F_SentRTPHeartBeep
 {
     Byte cmd[20];
-    
     cmd[0] = 'J';
     cmd[1] = 'H';
     cmd[2] = 'C';
@@ -6354,9 +6761,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     cmd[4] = 'D';
     cmd[5] = 0xD0;
     cmd[6] = 0x01;
-    
     NSData *dat = [[NSData alloc] initWithBytes:cmd length:7];
-    
     [self F_SentUdp:dat Server:self.sSerVerIP Port:20000];
     
 }
@@ -6690,6 +7095,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         close(self.videofd);
         self.videofd = -1;
     }
+    
 }
 
 
@@ -7000,7 +7406,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 #if 1
         if(self.b3D)
         {
-
+            
             I420Scale(back_frame->data[0], back_frame->linesize[0],
                       back_frame->data[1], back_frame->linesize[1],
                       back_frame->data[2], back_frame->linesize[2],
@@ -7062,7 +7468,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         bGoble_3D = b3D;
         [self  F_DispBack:self.dispBackImg];
-    }    
+    }
     return 0;
 }
 
@@ -7775,8 +8181,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         msg[8+i] = (uint8)(sPassword[i]);
     }
     NSData *data = [[NSData  alloc] initWithBytes:msg length:8+nLen];
-    [self F_SetOpInfo];
-    
     [self F_SentUdp:data Server:self.sSerVerIP Port:20000];
     
 }
@@ -8048,10 +8452,17 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     self.bIsConnect = NO;
     self.bCheckLink = NO;
+    
+    
+    [_GPRTPC_Data_Socket DisConnect];
+    
     [_GKA_Data_Socket DisConnect];
     [_GKA_Notice_Socket DisConnect];
     [_GKA_Cmd_Socket DisConnect];
     [self naCancelDownload];
+    
+    
+    
 }
 
 -(int)F_ReadAck:(int)ms
@@ -8096,6 +8507,10 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
 }
 
+
+
+
+
 -(void)F_StartReadData
 {
     __weak  JH_WifiCamera *weakself = self;
@@ -8118,7 +8533,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             {
                 continue;
             }
-            int nLen =(int) recv(weakself.GKA_Data_Socket.socketfd,weakself.pBuffer,VideoPackLen,0);
+            int nLen =(int) recv(weakself.GKA_Data_Socket.socketfd,weakself.pBuffer,512,0);
             {
                 if(nLen>0)
                 {
@@ -8130,7 +8545,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         [weakself DecordData_H264:nLen];
                     }
                 }
-            }            
+            }
         }
         NSLog(@"Exit ReadData Thread!");
         
@@ -8214,6 +8629,19 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     self.bStartinit = YES;
     self.bCanCheckRelink = YES;
 }
+-(int)ConnectedGPRTPC
+{
+    [self F_SetChekRelink:80];
+    if ([_GPRTPC_Data_Socket Connect:_sSerVerIP PORT:8080] < 0)
+    {
+        return -1;
+    }
+    [self F_SetChekRelink:100];
+    [self F_StartReadData_GPRTPC];
+    return 0;
+    
+}
+
 -(int)ConnectGPH264A
 {
     [self F_SetChekRelink:80];
@@ -8389,15 +8817,15 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     if(m_codecCtx!=NULL)
     {
-        if(m_codecCtx->width==0 || m_codecCtx->height==0)
+        if(m_codecCtx->coded_width==0 || m_codecCtx->coded_height==0)
             return;
     }
     
     if(pFrameYUV!=NULL)     //f如果在播放过程中，摄像头改变了分辨率。就在这里重新设定
     {
-        if(pFrameYUV->width != m_codecCtx->width || pFrameYUV->height != m_codecCtx->height)
+        if(pFrameYUV->width != m_codecCtx->coded_width || pFrameYUV->height != m_codecCtx->coded_height)
         {
-            NSLog(@"Resolution changed width = %d height =  %d",m_codecCtx->width,m_codecCtx->height);
+            NSLog(@"Resolution changed width = %d height =  %d",m_codecCtx->coded_width,m_codecCtx->coded_height);
             if(pFrameYUV!=NULL)
             {
                 av_freep(&(pFrameYUV->data[0]));
@@ -8422,11 +8850,11 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 sws_freeContext(img_convert_ctx);
                 img_convert_ctx = NULL;
             }
-            if(img_convert_ctxBmp!=NULL)
-            {
-                sws_freeContext(img_convert_ctxBmp);
-                img_convert_ctxBmp = NULL;
-            }
+//            if(img_convert_ctxBmp!=NULL)
+//            {
+//                sws_freeContext(img_convert_ctxBmp);
+//                img_convert_ctxBmp = NULL;
+//            }
             
             if(pFrameSnap !=NULL)
             {
@@ -8447,30 +8875,30 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     
     pFrameYUV=av_frame_alloc();
     pFrameYUV->format = pix_format;
-    pFrameYUV->width = m_codecCtx->width;
-    pFrameYUV->height = m_codecCtx->height;
+    pFrameYUV->width = m_codecCtx->coded_width;
+    pFrameYUV->height = m_codecCtx->coded_height;
     
-    av_image_alloc(pFrameYUV->data, pFrameYUV->linesize, m_codecCtx->width,
-                   m_codecCtx->height,
+    av_image_alloc(pFrameYUV->data, pFrameYUV->linesize, m_codecCtx->coded_width,
+                   m_codecCtx->coded_height,
                    pix_format, 4);
     
-    img_convert_ctx = sws_getContext(m_codecCtx->width, m_codecCtx->height, m_codecCtx->pix_fmt,
-                                     m_codecCtx->width, m_codecCtx->height, pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
+    img_convert_ctx = sws_getContext(m_codecCtx->coded_width, m_codecCtx->coded_height, m_codecCtx->pix_fmt,
+                                     m_codecCtx->coded_width, m_codecCtx->coded_height, pix_format, SWS_BICUBIC, NULL, NULL, NULL); //
     
     
     
-    img_convert_ctxBmp = sws_getContext(m_codecCtx->width, m_codecCtx->height, pix_format,
-                                        _nRecordWidth,_nRecordHeight,disp_pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
+//    img_convert_ctxBmp = sws_getContext(m_codecCtx->coded_width, m_codecCtx->coded_height, pix_format,
+//                                        _nRecordWidth,_nRecordHeight,disp_pix_format, SWS_FAST_BILINEAR, NULL, NULL, NULL); //
     
     if(frame_a==NULL)
     {
         frame_a = av_frame_alloc();
         frame_a->format = AV_PIX_FMT_YUV420P;
-        frame_a->width = m_codecCtx->width;
-        frame_a->height = m_codecCtx->height;
+        frame_a->width = m_codecCtx->coded_width;
+        frame_a->height = m_codecCtx->coded_height;
         
-        av_image_alloc(frame_a->data, frame_a->linesize, m_codecCtx->width,
-                       m_codecCtx->height,
+        av_image_alloc(frame_a->data, frame_a->linesize, m_codecCtx->coded_width,
+                       m_codecCtx->coded_height,
                        AV_PIX_FMT_YUV420P,4);
     }
     
@@ -8478,8 +8906,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         frame_b = av_frame_alloc();
         frame_b->format = AV_PIX_FMT_YUV420P;
-        frame_b->width = m_codecCtx->width/2;
-        frame_b->height = m_codecCtx->height/2;
+        frame_b->width = m_codecCtx->coded_width/2;
+        frame_b->height = m_codecCtx->coded_height/2;
         
         av_image_alloc(frame_b->data, frame_b->linesize, frame_b->width,
                        frame_b->height,
@@ -8506,6 +8934,8 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         m_codecCtx = avcodec_alloc_context3(codec);
         m_codecCtx->width = _nDispWidth;
         m_codecCtx->height = _nDispHeight;
+        m_codecCtx->coded_width = _nDispWidth;
+        m_codecCtx->coded_height = _nDispHeight;
         m_codecCtx->codec_id = AV_CODEC_ID_MJPEG;
         m_codecCtx->pix_fmt = AV_PIX_FMT_YUVJ422P;
         m_codecCtx->time_base.den = 1;
@@ -8674,32 +9104,22 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)F_H264Decord:(int)ret TYPE:(int)nType
 {
     int nKeyFrame = 0;
-    if(ret!=0)
-    {
-        self.nErrorFrame++;
-        if([self.delegate respondsToSelector:@selector(GetErrorFrame:)])
-        {
-            [self.delegate GetErrorFrame:self.nErrorFrame];
-        }
-    }
-    
     if(ret == 0)
     {
         [self.packetLock lock];
         self.nRelinkTime = 0;
         [self.packetLock unlock];
-        _nDispWidth = m_codecCtx->width;
-        _nDispHeight = m_codecCtx->height;
+        _nDispWidth = m_codecCtx->coded_width;
+        _nDispHeight = m_codecCtx->coded_height;
         if(!_bSetRecordWH)
         {
             _nRecordWidth = _nDispWidth;
             _nRecordHeight = _nDispHeight;
         }
-        
         nKeyFrame = m_decodedFrame->key_frame;
         if(nType == 0)
         {
-           [self InitMediaGKA];
+            [self InitMediaGKA];
         }
         
         if(nType == 1)  //  ffmpeg
@@ -8711,48 +9131,66 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             [self InitMediaSN:self.b480];
         }
         
-        sws_scale(img_convert_ctx,
-                  (const uint8_t *const *) m_decodedFrame->data,
-                  m_decodedFrame->linesize, 0,
-                  m_codecCtx->height,
-                  pFrameYUV->data, pFrameYUV->linesize);
         
-        
+        if(m_codecCtx->pix_fmt==AV_PIX_FMT_YUV420P || m_codecCtx->pix_fmt==AV_PIX_FMT_YUVJ420P)
+        {
+            I420Copy(m_decodedFrame->data[0], m_decodedFrame->linesize[0],
+                     m_decodedFrame->data[1], m_decodedFrame->linesize[1],
+                     m_decodedFrame->data[2], m_decodedFrame->linesize[2],
+                     pFrameYUV->data[0], frame_a->linesize[0],
+                     pFrameYUV->data[1], frame_a->linesize[1],
+                     pFrameYUV->data[2], frame_a->linesize[2],
+                     m_decodedFrame->width, m_decodedFrame->height);
+        }
+        else
+        {
+#if 0
+            sws_scale(img_convert_ctx,
+                      (const uint8_t *const *) m_decodedFrame->data,
+                      m_decodedFrame->linesize, 0,
+                      m_codecCtx->coded_height,
+                      pFrameYUV->data, pFrameYUV->linesize);
+            
+#else
+            I422ToI420(m_decodedFrame->data[0], m_decodedFrame->linesize[0],
+                       m_decodedFrame->data[1], m_decodedFrame->linesize[1],
+                       m_decodedFrame->data[2], m_decodedFrame->linesize[2],
+                       pFrameYUV->data[0], pFrameYUV->linesize[0],
+                       pFrameYUV->data[1], pFrameYUV->linesize[1],
+                       pFrameYUV->data[2], pFrameYUV->linesize[2],
+                       m_decodedFrame->width, m_decodedFrame->height
+                       );
+#endif
+        }
+
         if(_bMirror)
         {
-            //if(frame_a!=NULL)
-            //{
-            //    av_freep(&frame_a->data[0]);
-            //    av_frame_free(&frame_a);
-            //    frame_a = NULL;
-            //}
-            
             if (frame_a == NULL)
             {
                 frame_a = av_frame_alloc();
                 frame_a->format = AV_PIX_FMT_YUV420P;
-                frame_a->width = m_codecCtx->width;
-                frame_a->height = m_codecCtx->height;
-                av_image_alloc(frame_a->data, frame_a->linesize, m_codecCtx->width,
-                               m_codecCtx->height,
+                frame_a->width = m_codecCtx->coded_width;
+                frame_a->height = m_codecCtx->coded_height;
+                av_image_alloc(frame_a->data, frame_a->linesize, m_codecCtx->coded_width,
+                               m_codecCtx->coded_height,
                                AV_PIX_FMT_YUV420P, 4);
             }
             I420Mirror(pFrameYUV->data[0], pFrameYUV->linesize[0],
-                               pFrameYUV->data[1], pFrameYUV->linesize[1],
-                               pFrameYUV->data[2], pFrameYUV->linesize[2],
-                               frame_a->data[0], frame_a->linesize[0],
-                               frame_a->data[1], frame_a->linesize[1],
-                               frame_a->data[2], frame_a->linesize[2],
-                               frame_a->width, frame_a->height);
+                       pFrameYUV->data[1], pFrameYUV->linesize[1],
+                       pFrameYUV->data[2], pFrameYUV->linesize[2],
+                       frame_a->data[0], frame_a->linesize[0],
+                       frame_a->data[1], frame_a->linesize[1],
+                       frame_a->data[2], frame_a->linesize[2],
+                       frame_a->width, frame_a->height);
             
             I420Copy(frame_a->data[0], frame_a->linesize[0],
-                             frame_a->data[1], frame_a->linesize[1],
-                             frame_a->data[2], frame_a->linesize[2],
-                             pFrameYUV->data[0], frame_a->linesize[0],
-                             pFrameYUV->data[1], frame_a->linesize[1],
-                             pFrameYUV->data[2], frame_a->linesize[2],
-                             frame_a->width, frame_a->height);
-                             
+                     frame_a->data[1], frame_a->linesize[1],
+                     frame_a->data[2], frame_a->linesize[2],
+                     pFrameYUV->data[0], frame_a->linesize[0],
+                     pFrameYUV->data[1], frame_a->linesize[1],
+                     pFrameYUV->data[2], frame_a->linesize[2],
+                     frame_a->width, frame_a->height);
+            
         }
         
         int dd = (int)(_nScale*100);
@@ -8843,7 +9281,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             }
             
             
-            
             pSrcStart = pFrameYUV_D->data[1]+ly/2*pFrameYUV_D->linesize[1]+lx/2;
             pdes = pFrameYUV->data[1];
             
@@ -8915,8 +9352,76 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                          pFrameYUV->width, pFrameYUV->height);
             }
         }
+        
+        
+#if 0
+        MyFrame *mFrame = [[MyFrame alloc] init];
+        mFrame->pFrame = av_frame_alloc();
+        mFrame->pFrame->width=_nDispWidth;
+        mFrame->pFrame->height=_nDispHeight;
+        av_image_alloc(
+                       mFrame->pFrame->data, mFrame->pFrame->linesize, _nDispWidth,
+                       _nDispHeight,
+                       AV_PIX_FMT_YUV420P, 4);
+        {
+            I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
+                     pFrameYUV->data[1], pFrameYUV->linesize[1],
+                     pFrameYUV->data[2], pFrameYUV->linesize[2],
+                     mFrame->pFrame->data[0], mFrame->pFrame->linesize[0],
+                     mFrame->pFrame->data[1], mFrame->pFrame->linesize[1],
+                     mFrame->pFrame->data[2], mFrame->pFrame->linesize[2],
+                     mFrame->pFrame->width, mFrame->pFrame->height);
+        }
+        
+        MyFrame *tempFrame  = NULL;
+        @synchronized(videoFrames_A)
+        {
+            if(videoFrames_A.count>=10)
+            {
+                tempFrame = videoFrames_A[0];
+                //[self PlatformDisplay:tempFrame->pFrame];
+                [videoFrames_A removeObjectAtIndex:0];
+                if(tempFrame !=NULL)
+                {
+                    //[self PlatformDisplay:tempFrame->pFrame];
+                    av_freep(&(tempFrame->pFrame->data[0]));
+                    av_frame_free(&(tempFrame->pFrame));
+                }
+            }
+            [videoFrames_A addObject:mFrame];
+            _nDelayTime = 0;
+        }
+#else
         [self PlatformDisplay:pFrameYUV];
+#endif
     }
+}
+
+
+-(void)F_DelayPlay
+{
+    
+    MyFrame *tempFrame = nil;
+    @synchronized(videoFrames_A)
+    {
+        self.nDelayTime+=50;
+        {
+            if(videoFrames_A.count>0)
+            {
+                tempFrame = videoFrames_A[0];
+                [videoFrames_A removeObjectAtIndex:0];
+                _nDelayTime = 0;
+            }
+        }
+    }
+    
+    if(tempFrame!=nil)
+    {
+        [self PlatformDisplay:tempFrame->pFrame];
+        av_freep(&(tempFrame->pFrame->data[0]));
+        av_frame_free(&(tempFrame->pFrame));
+    }
+    
 }
 
 
@@ -8934,6 +9439,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     uint8_t *outbuff = NULL;
     uint8_t  *in_data;
     in_data = _pBuffer;
+    
     while(in_len>0)
     {
         len = av_parser_parse2(m_parser, m_codecCtx, &outbuff, &size, in_data, in_len, 0, 0, 0);
@@ -8946,12 +9452,21 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             packetA.data = outbuff;
             packetA.size = size;
             ret = -1;
+#ifdef NEW_FFMPEG
             if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
             {
                 if ((ret = avcodec_receive_frame(m_codecCtx, m_decodedFrame)) == 0) {
                     [self F_H264Decord:ret TYPE:0];
                 }
             }
+#else
+            int nFinished=0;
+            ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &nFinished, &packetA);
+            if(ret>0 && nFinished>0)
+            {
+                [self F_H264Decord:0 TYPE:0];
+            }
+#endif
             av_packet_unref(&packetA);
             self.bPlaying = YES;
         }
@@ -8977,6 +9492,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     pkt.data = NULL;
     pkt.size = 0;
     [self F_SetTimeout:2000];
+    int64_t nCurrent = av_gettime()/1000;
     while(self.bPlaying)
     {
         if(self.bSetpause)
@@ -8986,10 +9502,13 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         }
         [self F_SetTimeout:0];
         
+        
         if(av_read_frame(m_formatCtx, &pkt)>=0)
         {
+            
             [self F_SetTimeout:0];
             ret = -1;
+#ifdef NEW_FFMPEG
             if (avcodec_send_packet(m_codecCtx, &pkt) == 0)
             {
                 if ((ret = avcodec_receive_frame(m_codecCtx, m_decodedFrame)) == 0) {
@@ -8999,7 +9518,35 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                     }
                 }
             }
+#else
+            int nFinished = -1;
+            ret = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &nFinished, &pkt);
+            if(ret >0 && nFinished>0)
+            {
+                ret =0;
+            }
+            else
+            {
+                ret =-1;
+            }
+            if(ret == 0)
+            {
+                [self F_H264Decord:ret TYPE:1];
+            }
+#endif
             av_packet_unref(&pkt);
+            
+            int64_t nCurrentA = av_gettime()/1000;
+            if(_nDelaymsPlay>0 && _nDelaymsPlay<200)
+            {
+                if(nCurrentA-nCurrent<_nDelaymsPlay)
+                {
+                    int da =(int) (_nDelaymsPlay-(nCurrentA-nCurrent));
+                    if(da>0)
+                        usleep(da*1000);
+                }
+            }
+            nCurrent =nCurrentA;
         }
     }
     [self F_SetTimeout:1];
@@ -9017,35 +9564,52 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)DecordData_Mjpeg:(NSData *)data
 {
     
-    [self.packetLock lock];
-    self.nRelinkTime = 0;
-    [self.packetLock unlock];
-
-    uint8_t *outbuff = (uint8_t *)[data bytes];
     if(data.length==0) {
         return ;
     }
+    
+    [self.packetLock lock];
+    self.nRelinkTime = 0;
+    [self.packetLock unlock];
+    uint8_t *outbuff = (uint8_t *)[data bytes];
     int ret;
     int size = (int)data.length;
+    if (size>0)
     {
-        if (size>0)
+        AVPacket packetA = {0};
+        av_init_packet(&packetA);
+        packetA.data = outbuff;
+        packetA.size = size;
+        ret = -1;
+        
+#ifdef NEW_FFMPEG
+        if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
         {
-            AVPacket packetA = {0};
-            av_init_packet(&packetA);
-            packetA.data = outbuff;
-            packetA.size = size;
-            ret = -1;
-            
-            if (avcodec_send_packet(m_codecCtx, &packetA) == 0)
+            if ((ret = avcodec_receive_frame(m_codecCtx, m_decodedFrame)) == 0)
             {
-                if ((ret = avcodec_receive_frame(m_codecCtx, m_decodedFrame)) == 0) {
-                    [self F_H264Decord:ret TYPE:2];
-                }
+                [self F_H264Decord:ret TYPE:2];
             }
-            av_packet_unref(&packetA);
-            self.bPlaying = YES;
         }
+#else
+        int nFinished = -1;
+        ret  = avcodec_decode_video2(m_codecCtx, m_decodedFrame, &nFinished, &packetA);
+        if(ret>0 && nFinished>0)
+        {
+            ret =0;
+        }
+        else
+        {
+            ret = -1;
+        }
+        if(ret==0)
+        {
+            [self F_H264Decord:ret TYPE:2];
+        }
+#endif
+        av_packet_unref(&packetA);
+        self.bPlaying = YES;
     }
+    
     return;
 }
 
@@ -9213,7 +9777,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)F_StratListenat20000
 {
     struct sockaddr_in myaddr;
-    _bRead20000 = NO;
+    
     if(_socket_udp20000>0)
         return;
     self.socket_udp20000 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -9221,7 +9785,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     {
         return;
     }
-    
+    _bRead20000 = NO;
     bzero((char *) &myaddr, sizeof(myaddr));
     myaddr.sin_family = AF_INET;
     myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -9241,7 +9805,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     _bRead20000 = YES;
     __weak  JH_WifiCamera *weakself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        Byte readBuff[50];
+        Byte readBuff[2000];
         int size;
         struct sockaddr_in servaddr; /* the server's full addr */
         struct timeval tv;
@@ -9271,7 +9835,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 continue;
             }
             
-            ssize_t nbytes = recvfrom(weakself.socket_udp20000, readBuff,48, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
+            ssize_t nbytes = recvfrom(weakself.socket_udp20000, readBuff,2000, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
             if(nbytes>0)
             {
                 NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];
@@ -9294,7 +9858,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             usleep(1000*5);
         }
     });
-    
 }
 
 -(void)AdjData:(NSData *)dataR
@@ -9389,14 +9952,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         dfirst++;
                         for(int ds=0;ds<2+abc-2;ds++)
                         {
-                                if(ds == 0)
-                                {
-                                    cheksum = *dfirst;
-                                }
-                                else
-                                {
-                                    cheksum^=(*dfirst);
-                                }
+                            if(ds == 0)
+                            {
+                                cheksum = *dfirst;
+                            }
+                            else
+                            {
+                                cheksum^=(*dfirst);
+                            }
                             dfirst++;
                         }
                         if(checksumA == cheksum)
@@ -9501,14 +10064,14 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 else if(_nCmdResType==1)
                 {
                     
-                        [self AdjData:readBuffA];
-                        [self F_ProgressResType1];
-                        if(_array.count>8)  //防止出错，内存爆炸
-                        {
-                            [_array removeAllObjects];
-                            //[_wifiData resetBytesInRange:NSMakeRange(0, [_wifiData length])];
-                            //[_wifiData setLength:0];
-                        }
+                    [self AdjData:readBuffA];
+                    [self F_ProgressResType1];
+                    if(_array.count>8)  //防止出错，内存爆炸
+                    {
+                        [_array removeAllObjects];
+                        //[_wifiData resetBytesInRange:NSMakeRange(0, [_wifiData length])];
+                        //[_wifiData setLength:0];
+                    }
                 }
                 
             }
@@ -9544,6 +10107,38 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         [self.delegate GetDispStyle:nDispstyle];
                     }
                 }
+                else if(readBuff[5]==0x30 &&readBuff[6]==0x05)   //返回 30 05 命令读取设备flash数据
+                {
+                    if(data.length>=9)
+                    {
+                        if([self.delegate respondsToSelector:@selector(onReadDataFromFlash:)])
+                        {
+                            uint16_t nLen =(uint16_t)(readBuff[7]+readBuff[8]*0x100);
+                            NSData *dat = [NSData dataWithBytes:readBuff+9 length:nLen];
+                            [self.delegate onReadDataFromFlash:dat];
+                        }
+                    }
+                }
+                else if(readBuff[5]==0x30 &&readBuff[6]==0x06)   //返回 30 06 命令写设备flash数据是否OK
+                {
+                    if(data.length>=8)
+                    {
+                        if([self.delegate respondsToSelector:@selector(WriteFlashResult:)])
+                        {
+                            [self.delegate WriteFlashResult:readBuff[7]];
+                        }
+                    }
+                }
+                else if(readBuff[5]==0x10 &&readBuff[6]==0x20)   //读取 pwm值
+                {
+                    if(data.length>=8)
+                    {
+                        if([self.delegate respondsToSelector:@selector(onGetWifiInfoData:)])
+                        {
+                            [self.delegate onGetWifiInfoData:readBuff[7]];
+                        }
+                    }
+                }
             }
         }
     }
@@ -9565,9 +10160,13 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         {
             if([self.delegate respondsToSelector:@selector(StatusChanged_GP:)])
             {
-                self.nSdStatus_GP &=0xFF00;
+                self.nSdStatus_GP = 0;//&=0xFF00;
                 self.nSdStatus_GP |=cmd[6];
                 [self.delegate StatusChanged_GP:(int)(self.nSdStatus_GP)];
+            }
+            if([self.delegate respondsToSelector:@selector(onGetKey:)])
+            {
+                [self.delegate onGetKey:(int)(cmd[6])];
             }
             
         }
@@ -9714,5 +10313,234 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 {
     [self F_SentUdp:data Server:self.sSerVerIP Port:20000];
 }
+
+
+
+-(BOOL)naSentUdpData:(NSString *)sIP  Port:(int)nPort  Data:(NSData *)data
+{
+    [self F_SentUdp:data Server:sIP Port:nPort];
+    
+    return YES;
+}
+-(BOOL)naStartReadUdp:(int)nPort
+{
+    struct sockaddr_in myaddr;
+    _bReadUdp = NO;
+    if(_socket_udp>0)
+        return YES;
+    self.socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(_socket_udp <0)
+    {
+        return NO;
+    }
+    
+    bzero((char *) &myaddr, sizeof(myaddr));
+    myaddr.sin_family = AF_INET;
+    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    myaddr.sin_port = htons(nPort);
+    
+    int value = 1;
+    int status;
+    status = setsockopt(_socket_udp, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value));
+    status = setsockopt(_socket_udp, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value));
+    if (bind(_socket_udp, (struct sockaddr *)&myaddr, sizeof(myaddr)) <0)
+    {
+        shutdown(_socket_udp, 2);
+        close(_socket_udp);
+        _socket_udp = -1;
+        return NO;
+    }
+    _bReadUdp = YES;
+    __weak  typeof (self) weakself = self;
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        Byte readBuff[1400];
+        int size;
+        struct sockaddr_in servaddr; /* the server's full addr */
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 1000*5;
+        fd_set read_fd;
+        
+        while(weakself.bReadUdp)
+        {
+            if(weakself.socket_udp<0)
+                break;
+            
+            tv.tv_sec = 0;
+            tv.tv_usec = 1000*10;
+            
+            FD_ZERO(&read_fd); // 在使用之前总是要清空
+            // 开始使用select
+            FD_SET(weakself.socket_udp, &read_fd); // 把socka放入要测试的描述符集中
+            
+            int nRet = select(weakself.socket_udp+1, &read_fd, NULL, NULL, &tv);
+            if(nRet<=0)
+            {
+                continue;
+            }
+            if (!(FD_ISSET(weakself.socket_udp, &read_fd)))
+            {
+                continue;
+            }
+            
+            ssize_t nbytes = recvfrom(weakself.socket_udp, readBuff,1400, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
+            if(nbytes>0)
+            {
+                
+                @autoreleasepool {
+                    NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];
+                    if([weakself.delegate respondsToSelector:@selector(GetUdpData:)])
+                    {
+                        [weakself.delegate GetUdpData: data];
+                    }
+                }
+            }
+            usleep(1000);
+        }
+        shutdown(weakself.socket_udp, 2);
+        close(weakself.socket_udp);
+        weakself.socket_udp = -1;
+        NSLog(@"Exit udp Read Thread!!!!");
+    });
+    return YES;
+}
+-(BOOL)naStopReadUdp
+{
+    _bReadUdp = NO;
+    usleep(1000 *200);
+    return YES;
+}
+
+
+
+
+-(void)naWriteData2Flash:(NSData *)data
+{
+    if(!data)
+        return;
+    if(data.length==0)
+        return;
+    if(!_sSerVerIP)
+    {
+        return;
+    }
+    int nLen =(int)data.length;
+    
+    Byte cmd[9];
+    cmd[0]='J';
+    cmd[1]='H';
+    cmd[2]='C';
+    cmd[3]='M';
+    cmd[4]='D';
+    cmd[4]='D';
+    cmd[5] = 0x30;
+    cmd[6] = 0x06;
+    cmd[7] = (uint8_t)nLen;
+    cmd[8] = (uint8_t)(nLen>>8);
+    NSData *dataa = [[NSData  alloc] initWithBytes:cmd length:9];
+    NSMutableData *sentData = [NSMutableData dataWithData:dataa];
+    [sentData appendData:data];
+    [self F_SentUdp:sentData Server:self.sSerVerIP Port:20000];
+    
+}
+-(void)naReadDataFromFlash
+{
+    if(!_sSerVerIP)
+    {
+        return;
+    }
+    
+    uint8_t msg[10];
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x30;
+    msg[6] = 0x05;
+    msg[7] = (uint8_t)510;
+    msg[8] = (uint8_t)(510>>8);
+    NSData *dataa = [[NSData  alloc] initWithBytes:msg length:9];
+    [self F_SentUdp:dataa Server:self.sSerVerIP Port:20000];
+}
+
+-(void)naSetLedPWM:(int)nPwm
+{
+    if(!_sSerVerIP)
+    {
+        return;
+    }
+    
+    uint8_t msg[10];
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x20;
+    msg[6] = 0x02;
+    msg[7] = (uint8_t)nPwm;
+    NSData *dataa = [[NSData  alloc] initWithBytes:msg length:8];
+    [self F_SentUdp:dataa Server:self.sSerVerIP Port:20000];
+}
+-(void)naGetLedPWM
+{
+    if(!_sSerVerIP)
+    {
+        return;
+    }
+    
+    uint8_t msg[10];
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x30;
+    msg[6] = 0x07;
+    NSData *dataa = [[NSData  alloc] initWithBytes:msg length:7];
+    [self F_SentUdp:dataa Server:self.sSerVerIP Port:20000];
+
+}
+
+-(void)naGetModelInfo
+{
+    [self F_GetDeviceType];
+    [self F_StratListenat20000];
+    
+    uint8_t msg[20];
+    
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x10;
+    msg[6] = 0x00;
+    
+    NSData *dataa = [[NSData  alloc] initWithBytes:msg length:7];
+    [self F_SentUdp:dataa Server:self.sSerVerIP Port:20000];
+    
+    usleep(1000 * 20);
+    
+    msg[0] = 'J';
+    msg[1] = 'H';
+    msg[2] = 'C';
+    msg[3] = 'M';
+    msg[4] = 'D';
+    msg[5] = 0x20;
+    msg[6] = 0x00;
+    msg[7] = 0x00;
+    msg[8] = 0x00;
+    msg[9] = 0x00;
+    msg[10] = 0x00;
+    
+    dataa = [[NSData  alloc] initWithBytes:msg length:11];
+    [self F_SentUdp:dataa Server:self.sSerVerIP Port:20000];
+    usleep(1000 * 20);
+    
+    
+}
+
 
 @end
