@@ -101,6 +101,9 @@ typedef enum
 -(void)onReadDataFromFlash:(NSData *)data;
 
 
+-(void)GetDataFromWifi:(NSData *)data;     // 所有SDK内部没有处理的命令，都通过这里返回。
+
+
 -(void)onGetWifiInfoData:(int)nPwm;     //返回读取到的PWMz设定值
 
 @end
@@ -151,9 +154,12 @@ typedef enum
 -(BOOL)isPhoneRecording;  //模块是否在录像
 
 
--(void)naSetRecordWH:(int)w Height:(int)h; //设定 录像的 宽高
+-(void)naSetRecordWH:(int)w Height:(int)h; //设定 拍照录像的 宽高  如果调用了naSetSnapPhoto(xxx,xxx,YES)，则只是设定了录像分辨率
+-(void)naSetSnapPhoto:(int)w Height:(int)h SET:(BOOL)b; //设定拍照分辨率， 如果B为YES，则设定有效，如果NO，以naSetRecordWH设定为准。
+// 如果上面两个函数都没有调用，则以原始分辨率来拍照录像。
 
 -(int64_t)naGetRecordTime; //返回 正在录像 的时长 unit:ms
+-(int32_t)naGetDispWH;
 
 -(BOOL)naSentCmd:(NSData *)data; //向飞控发送命令
 -(void)naRotation:(int)n;// n = 0 90 180 270 -90  显示是否转90度显示，主要是有些APP，需要竖屏显示， 但我们模块返回的图像都是横屏的，所以需要设定才能正常满屏显示
@@ -187,6 +193,12 @@ typedef enum
 
 
 -(void)naGetModelInfo;  //获取模块本身的信息 结果通过  GetModelInfo 返回
+
+
+-(void)naSetTransferSize:(int)nWidth Height:(int)nHeight  ROUND:(BOOL)b;
+
+-(void)naSetCameraDataRota:(int)nR;
+
 
 // 以下保留
 //--------------- Reserved Fuction -----

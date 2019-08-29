@@ -34,7 +34,7 @@
 		870F46D41DFCEF88007D56B1 /* MySocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46D01DFCEF88007D56B1 /* MySocket.m */; };
 		870F46D81DFCEFB0007D56B1 /* Reachability_aiven.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46D61DFCEFB0007D56B1 /* Reachability_aiven.h */; };
 		870F46D91DFCEFB0007D56B1 /* Reachability_aiven.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46D71DFCEFB0007D56B1 /* Reachability_aiven.m */; };
-		870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		870F46DC1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; };
 		870F46DD1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46DB1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m */; };
 		870F46DF1DFCEFF4007D56B1 /* phone_rl_protocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DE1DFCEFF4007D56B1 /* phone_rl_protocol.h */; };
 		870F46E21DFCF00E007D56B1 /* JH_WifiCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46E01DFCF00E007D56B1 /* JH_WifiCamera.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -43,7 +43,6 @@
 		870F46E71DFCF01D007D56B1 /* MyFrame.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46E51DFCF01D007D56B1 /* MyFrame.m */; };
 		871339B220C925100046B690 /* XDXRecoder.h in Headers */ = {isa = PBXBuildFile; fileRef = 871339B020C925100046B690 /* XDXRecoder.h */; };
 		871339B320C925100046B690 /* XDXRecoder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 871339B120C925100046B690 /* XDXRecoder.mm */; };
-		872F741A20B8180400CBBE94 /* libyuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 872F741920B8180400CBBE94 /* libyuv.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		875518DB1F662CCE00C042B5 /* JPEG_BUFFER.h in Headers */ = {isa = PBXBuildFile; fileRef = 875518D91F662CCE00C042B5 /* JPEG_BUFFER.h */; };
 		875518DC1F662CCE00C042B5 /* JPEG_BUFFER.m in Sources */ = {isa = PBXBuildFile; fileRef = 875518DA1F662CCE00C042B5 /* JPEG_BUFFER.m */; };
 		87931E111FD7839C00A08BFF /* basic_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 87931DCD1FD7839C00A08BFF /* basic_types.h */; };
@@ -81,10 +80,12 @@
 		8795C69320906AD2005D7917 /* streaming.h in Headers */ = {isa = PBXBuildFile; fileRef = 8795C68320906AD2005D7917 /* streaming.h */; };
 		8795C69420906AD2005D7917 /* track.h in Headers */ = {isa = PBXBuildFile; fileRef = 8795C68420906AD2005D7917 /* track.h */; };
 		8795C69520906AD2005D7917 /* track_prop.h in Headers */ = {isa = PBXBuildFile; fileRef = 8795C68520906AD2005D7917 /* track_prop.h */; };
+		87974E5322C6066600BD0119 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0D21DEE7E30062F073 /* libavcodec.a */; };
+		87974E5422C606AD00BD0119 /* libyuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 872F741920B8180400CBBE94 /* libyuv.a */; };
+		87974E5522C606BD00BD0119 /* libmp4v2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8795C68720906AD2005D7917 /* libmp4v2.a */; };
+		87974E5622C606E000BD0119 /* libmp4v2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8795C68720906AD2005D7917 /* libmp4v2.a */; };
 		879B4921215A182D00DFFAFB /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 87132737202AC61D00795F8B /* libz.tbd */; settings = {ATTRIBUTES = (Required, ); }; };
 		879B4922215A184600DFFAFB /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 87132739202AC63600795F8B /* libiconv.tbd */; settings = {ATTRIBUTES = (Required, ); }; };
-		879F186F1FC658800044E0EB /* libmp4v2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 879F186E1FC658800044E0EB /* libmp4v2.a */; settings = {ATTRIBUTES = (Required, ); }; };
-		87C53C692293E21600133033 /* test.m in Sources */ = {isa = PBXBuildFile; fileRef = 87F3710B222D2524006A82B5 /* test.m */; };
 		87C53C6A2293E21600133033 /* ALAssetsLibrary+CustomPhotoAlbum.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46DB1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m */; };
 		87C53C6B2293E21600133033 /* MyCmdData.m in Sources */ = {isa = PBXBuildFile; fileRef = 87F947F2215C787900CF3B1A /* MyCmdData.m */; };
 		87C53C6C2293E21600133033 /* JH_WifiCamera.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46E11DFCF00E007D56B1 /* JH_WifiCamera.m */; };
@@ -98,12 +99,11 @@
 		87C53C742293E21600133033 /* MySocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 870F46D01DFCEF88007D56B1 /* MySocket.m */; };
 		87C53C752293E21600133033 /* XDXRecoder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 871339B120C925100046B690 /* XDXRecoder.mm */; };
 		87C53C7E2293E21600133033 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 87132739202AC63600795F8B /* libiconv.tbd */; settings = {ATTRIBUTES = (Required, ); }; };
-		87C53C7F2293E21600133033 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 87132737202AC61D00795F8B /* libz.tbd */; settings = {ATTRIBUTES = (Required, ); }; };
-		87C53C802293E21600133033 /* libmp4v2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 879F186E1FC658800044E0EB /* libmp4v2.a */; settings = {ATTRIBUTES = (Required, ); }; };
+		87C53C7F2293E21600133033 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 87132737202AC61D00795F8B /* libz.tbd */; };
 		87C53C812293E21600133033 /* libyuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 872F741920B8180400CBBE94 /* libyuv.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87C53C832293E21600133033 /* convert_from_argb.h in Headers */ = {isa = PBXBuildFile; fileRef = 87931DD31FD7839C00A08BFF /* convert_from_argb.h */; };
 		87C53C842293E21600133033 /* isma.h in Headers */ = {isa = PBXBuildFile; fileRef = 8795C67C20906AD2005D7917 /* isma.h */; };
-		87C53C852293E21600133033 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		87C53C852293E21600133033 /* ALAssetsLibrary+CustomPhotoAlbum.h in Headers */ = {isa = PBXBuildFile; fileRef = 870F46DA1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.h */; };
 		87C53C862293E21600133033 /* parseutils.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9E91F74D4370037A769 /* parseutils.h */; };
 		87C53C872293E21600133033 /* eval.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9CF1F74D4370037A769 /* eval.h */; };
 		87C53C882293E21600133033 /* chapter.h in Headers */ = {isa = PBXBuildFile; fileRef = 8795C67820906AD2005D7917 /* chapter.h */; };
@@ -136,7 +136,6 @@
 		87C53CA32293E21600133033 /* rotate.h in Headers */ = {isa = PBXBuildFile; fileRef = 87931DD81FD7839C00A08BFF /* rotate.h */; };
 		87C53CA42293E21600133033 /* channel_layout.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9C61F74D4370037A769 /* channel_layout.h */; };
 		87C53CA52293E21600133033 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9FE1F74D4380037A769 /* version.h */; };
-		87C53CA62293E21600133033 /* test.h in Headers */ = {isa = PBXBuildFile; fileRef = 87F3710A222D2524006A82B5 /* test.h */; };
 		87C53CA72293E21600133033 /* dxva2.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C99D1F74D4370037A769 /* dxva2.h */; };
 		87C53CA82293E21600133033 /* xtea.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9FF1F74D4380037A769 /* xtea.h */; };
 		87C53CA92293E21600133033 /* avformat.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4C9B21F74D4370037A769 /* avformat.h */; };
@@ -362,14 +361,11 @@
 		87D4CA751F74D4380037A769 /* swscale.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4CA041F74D4380037A769 /* swscale.h */; };
 		87D4CA761F74D4380037A769 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 87D4CA051F74D4380037A769 /* version.h */; };
 		87DCC3192272A9F400483CC1 /* libswscale.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0E21DEE7E30062F073 /* libswscale.a */; settings = {ATTRIBUTES = (Required, ); }; };
-		87DCC31A2272A9F400483CC1 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0D21DEE7E30062F073 /* libavcodec.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87DCC31B2272A9F400483CC1 /* libavdevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0A21DEE7E30062F073 /* libavdevice.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87DCC31C2272A9F400483CC1 /* libavfilter.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF1021DEE7E30062F073 /* libavfilter.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87DCC31D2272A9F400483CC1 /* libavformat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0F21DEE7E30062F073 /* libavformat.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87DCC31E2272A9F400483CC1 /* libavutil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0C21DEE7E30062F073 /* libavutil.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		87DCC31F2272A9F400483CC1 /* libswresample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8748BF0B21DEE7E30062F073 /* libswresample.a */; settings = {ATTRIBUTES = (Required, ); }; };
-		87F3710C222D2524006A82B5 /* test.h in Headers */ = {isa = PBXBuildFile; fileRef = 87F3710A222D2524006A82B5 /* test.h */; };
-		87F3710D222D2524006A82B5 /* test.m in Sources */ = {isa = PBXBuildFile; fileRef = 87F3710B222D2524006A82B5 /* test.m */; };
 		87F947F4215C787A00CF3B1A /* MyCmdData.m in Sources */ = {isa = PBXBuildFile; fileRef = 87F947F2215C787900CF3B1A /* MyCmdData.m */; };
 		87F947F5215C787A00CF3B1A /* MyCmdData.h in Headers */ = {isa = PBXBuildFile; fileRef = 87F947F3215C787900CF3B1A /* MyCmdData.h */; };
 /* End PBXBuildFile section */
@@ -578,8 +574,6 @@
 		87D4CA021F74D4380037A769 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		87D4CA041F74D4380037A769 /* swscale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = swscale.h; sourceTree = "<group>"; };
 		87D4CA051F74D4380037A769 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
-		87F3710A222D2524006A82B5 /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
-		87F3710B222D2524006A82B5 /* test.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = test.m; sourceTree = "<group>"; };
 		87F947F2215C787900CF3B1A /* MyCmdData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyCmdData.m; sourceTree = "<group>"; };
 		87F947F3215C787900CF3B1A /* MyCmdData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyCmdData.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -589,8 +583,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				87974E5322C6066600BD0119 /* libavcodec.a in Frameworks */,
 				87DCC3192272A9F400483CC1 /* libswscale.a in Frameworks */,
-				87DCC31A2272A9F400483CC1 /* libavcodec.a in Frameworks */,
 				87DCC31B2272A9F400483CC1 /* libavdevice.a in Frameworks */,
 				87DCC31C2272A9F400483CC1 /* libavfilter.a in Frameworks */,
 				87DCC31D2272A9F400483CC1 /* libavformat.a in Frameworks */,
@@ -598,8 +592,8 @@
 				87DCC31F2272A9F400483CC1 /* libswresample.a in Frameworks */,
 				879B4922215A184600DFFAFB /* libiconv.tbd in Frameworks */,
 				879B4921215A182D00DFFAFB /* libz.tbd in Frameworks */,
-				879F186F1FC658800044E0EB /* libmp4v2.a in Frameworks */,
-				872F741A20B8180400CBBE94 /* libyuv.a in Frameworks */,
+				87974E5522C606BD00BD0119 /* libmp4v2.a in Frameworks */,
+				87974E5422C606AD00BD0119 /* libyuv.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -607,9 +601,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				87C53C7E2293E21600133033 /* libiconv.tbd in Frameworks */,
 				87C53C7F2293E21600133033 /* libz.tbd in Frameworks */,
-				87C53C802293E21600133033 /* libmp4v2.a in Frameworks */,
+				87C53C7E2293E21600133033 /* libiconv.tbd in Frameworks */,
+				87974E5622C606E000BD0119 /* libmp4v2.a in Frameworks */,
 				87C53C812293E21600133033 /* libyuv.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -667,8 +661,6 @@
 				870F46DE1DFCEFF4007D56B1 /* phone_rl_protocol.h */,
 				870F46E01DFCF00E007D56B1 /* JH_WifiCamera.h */,
 				870F46E11DFCF00E007D56B1 /* JH_WifiCamera.m */,
-				87F3710A222D2524006A82B5 /* test.h */,
-				87F3710B222D2524006A82B5 /* test.m */,
 				870F46E41DFCF01D007D56B1 /* MyFrame.h */,
 				875518D91F662CCE00C042B5 /* JPEG_BUFFER.h */,
 				875518DA1F662CCE00C042B5 /* JPEG_BUFFER.m */,
@@ -1106,7 +1098,6 @@
 				87931E321FD7839C00A08BFF /* rotate.h in Headers */,
 				87D4CA391F74D4380037A769 /* channel_layout.h in Headers */,
 				87D4CA711F74D4380037A769 /* version.h in Headers */,
-				87F3710C222D2524006A82B5 /* test.h in Headers */,
 				87D4CA141F74D4380037A769 /* dxva2.h in Headers */,
 				87D4CA721F74D4380037A769 /* xtea.h in Headers */,
 				87D4CA261F74D4380037A769 /* avformat.h in Headers */,
@@ -1268,7 +1259,6 @@
 				87C53CA32293E21600133033 /* rotate.h in Headers */,
 				87C53CA42293E21600133033 /* channel_layout.h in Headers */,
 				87C53CA52293E21600133033 /* version.h in Headers */,
-				87C53CA62293E21600133033 /* test.h in Headers */,
 				87C53CA72293E21600133033 /* dxva2.h in Headers */,
 				87C53CA82293E21600133033 /* xtea.h in Headers */,
 				87C53CA92293E21600133033 /* avformat.h in Headers */,
@@ -1451,6 +1441,7 @@
 					};
 					87C53C672293E21600133033 = {
 						DevelopmentTeam = WGQU9429FP;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -1512,7 +1503,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				87F3710D222D2524006A82B5 /* test.m in Sources */,
 				870F46DD1DFCEFDE007D56B1 /* ALAssetsLibrary+CustomPhotoAlbum.m in Sources */,
 				87F947F4215C787A00CF3B1A /* MyCmdData.m in Sources */,
 				870F46E31DFCF00E007D56B1 /* JH_WifiCamera.m in Sources */,
@@ -1532,7 +1522,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				87C53C692293E21600133033 /* test.m in Sources */,
 				87C53C6A2293E21600133033 /* ALAssetsLibrary+CustomPhotoAlbum.m in Sources */,
 				87C53C6B2293E21600133033 /* MyCmdData.m in Sources */,
 				87C53C6C2293E21600133033 /* JH_WifiCamera.m in Sources */,
@@ -1676,7 +1665,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_MODULES_AUTOLINK = YES;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = WGQU9429FP;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1707,6 +1696,7 @@
 					"$(PROJECT_DIR)/JH-Libary/FFmpeg_iOS/lib",
 				);
 				MACH_O_TYPE = mh_dylib;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				OTHER_LDFLAGS = "";
@@ -1791,7 +1781,8 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_MODULES_AUTOLINK = YES;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = WGQU9429FP;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1827,6 +1818,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.joyhonest.JH-Libary";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				STRIP_STYLE = debugging;
 				WARNING_CFLAGS = "-Wno-documentation";
@@ -1840,7 +1832,8 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_MODULES_AUTOLINK = YES;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = WGQU9429FP;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1875,6 +1868,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.joyhonest.JH-Libary";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				STRIP_STYLE = debugging;
 				WARNING_CFLAGS = "-Wno-documentation";

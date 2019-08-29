@@ -4,6 +4,9 @@
 #define  VideoPackLen  (8096)
 
 #define  NEW_FFMPEG
+//#import "arm_neon.h"
+
+  
 
 #import <AVFoundation/AVFoundation.h>
 #import <VideoToolbox/VideoToolbox.h>
@@ -88,6 +91,7 @@ int    nRotation;
     AVCodecContext  	*m_codecCtx ;
     AVFrame         	*m_decodedFrame;
     AVFrame             *pFrameYUV;
+    AVFrame             *pFrameYUV_Real;
     
     AVFrame             *pFrameSnap;
     
@@ -185,6 +189,7 @@ int    nRotation;
     H264HwDecoderImpl *h264Decoder;
 #endif
 }
+@property(assign,nonatomic) int nCameraDataRota;
 
 @property(assign,nonatomic) int32_t nJpgStart;
 @property(assign,nonatomic) int32_t nJpgEnd;
@@ -222,8 +227,14 @@ int    nRotation;
 @property  (strong,nonatomic)  NSString *sver;
 @property (assign,nonatomic)  int nRecordWidth;
 @property (assign,nonatomic)  int nRecordHeight;
-
 @property (assign,nonatomic)  BOOL  bSetRecordWH;
+
+
+@property (assign,nonatomic)  int nPhotoW;
+@property (assign,nonatomic)  int nPhotoH;
+@property (assign,nonatomic)  BOOL  bPhotoSet;
+
+
 
 @property (assign,nonatomic)  uint64_t  nFrameCount;
 @property (assign,nonatomic)  int  nDispFps;
@@ -461,6 +472,18 @@ int    nRotation;
 
 @property(assign,nonatomic) int nDelaymsPlay;
 
+@property(assign,nonatomic) BOOL  bTransRound;
+@property(assign,nonatomic) BOOL  bTransferSize;
+@property(assign,nonatomic) int   nTransferWidth;
+@property(assign,nonatomic) int   nTransferHeight;
+@property(assign,nonatomic) AVFrame  *Frame_Trans;
+@property(assign,nonatomic) AVFrame  *frame_scanl;
+
+//@property(assign,nonatomic) Byte *imageBytes;
+
+
+
+
 @end
 
 
@@ -478,6 +501,9 @@ typedef struct
 
 -(UIImage*)imageWithImage :( UIImage*)sourceImage scaledToSize :( CGSize)newSize;
 {
+    
+    
+    
     CGFloat targetWidth = newSize.width;
     CGFloat targetHeight = newSize.height;
     
@@ -952,6 +978,8 @@ typedef struct
 
 -(void)naSetDispViewB:(JH_OpenGLView *)dispView  BackGround:(UIImage *)img
 {
+    
+    
     self.dispView = dispView;
     self.bSetDispBack_VerB = YES;
     //[self.dispView SetRotation:_nRota];
@@ -1334,6 +1362,15 @@ static   int   interrupt_cb( void   *para)
     self = [super init];
     if(self)
     {
+        _socket_udp20000 = -1;
+        _frame_scanl = NULL;
+        _nPhotoW = 640;
+        _nPhotoH = 360;
+        _bPhotoSet = NO;  //  如果 为 true 表示拍照时用  nPhotoW   nPhotoH
+
+        _Frame_Trans = NULL;
+        _nTransferWidth = 640;
+        _nTransferHeight = 360;
         _nDelaymsPlay = 0;
         _bMirror = NO;
         _array = [[NSMutableArray alloc] init];
@@ -1984,7 +2021,7 @@ static   int   interrupt_cb( void   *para)
 
 -(BOOL)naInit:(NSString *)sPath  tcp:(BOOL)bTCP
 {
-    self.bSetRecordWH = NO;
+    //self.bSetRecordWH = NO;
     self.bConnectedOK = NO;
     self.bTCP = bTCP;
     return  [self naInit_:sPath];
@@ -2007,8 +2044,7 @@ static   int   interrupt_cb( void   *para)
 -(int)F_GP_SetLanguage:(Byte)nLanguage
 {
     
-    
-    if(!self.sSerVerIP)
+    //if(!self.sSerVerIP)
     {
         [self F_GetDeviceType];
         //[self F_GetServerIP];
@@ -2065,7 +2101,7 @@ static   int   interrupt_cb( void   *para)
 
 -(BOOL)F_Getis480P_A
 {
-    usleep(5000);
+    usleep(5000);  //5ms
     Byte cmd[2];
     cmd[0]=0xA6;
     cmd[1]=0x6A;
@@ -2093,67 +2129,80 @@ static   int   interrupt_cb( void   *para)
     
     BOOL  b480 = NO;
     struct timeval timeoutA = {0,1000*210};     //20ms
+
+    //setsockopt(udpSocket,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeoutA,sizeof(struct timeval));
+    fd_set read_fd;
     
-    setsockopt(udpSocket,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeoutA,sizeof(struct timeval));
-    nbytes = recvfrom(udpSocket, buf_, 100, 0, (struct sockaddr *)&addr4, &add_len);
-    if(nbytes<0)
+    FD_ZERO(&read_fd); // 在使用之前总是要清空
+    // 开始使用select
+    FD_SET(udpSocket, &read_fd); // 把socka放入要测试的描述符集中
+    
+    int nRet = select(udpSocket+1, &read_fd, NULL, NULL, &timeoutA);
+    if(nRet<=0)
     {
-        b480 = NO;
+        ;
     }
-    if(nbytes>=48)
+    if ((FD_ISSET(udpSocket, &read_fd)))
     {
-        int n1 = buf_[42]*0x100;
-        int n = buf_[41];
-        n+=n1;
-        if(n==480)
-            b480 = YES;
+        nbytes = recvfrom(udpSocket, buf_, 100, 0, (struct sockaddr *)&addr4, &add_len);
+        if(nbytes>=48)
+        {
+            int n1 = buf_[42]*0x100;
+            int n = buf_[41];
+            n+=n1;
+            if(n==480)
+                b480 = YES;
+        }
+        close(udpSocket);
+        return b480;
     }
     close(udpSocket);
-    return b480;
+    return NO;
+    
 }
 
--(BOOL)F_Getis480P
-{
-    usleep(5000);
-    Byte cmd[2];
-    cmd[0]=0x42;
-    cmd[1]=0x02;
-    int udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    
-    struct sockaddr_in addr4;
-    bzero(&addr4, sizeof(addr4));
-    addr4.sin_len = sizeof(addr4);
-    addr4.sin_family = AF_INET;
-    addr4.sin_port = htons(30864);
-    addr4.sin_addr.s_addr = inet_addr([self.sSerVerIP UTF8String]);
-    socklen_t add_len = sizeof(struct sockaddr_in);
-    sendto(udpSocket, cmd, 2, 0, (struct sockaddr *)&addr4, add_len);
-    
-    int nbytes;
-    int size;
-    Byte buf_[200];
-    struct sockaddr_in servaddr; /* the server's full addr */
-    bzero((char *)&servaddr, sizeof(servaddr));
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 1000*210;
-    setsockopt(udpSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    BOOL  b480 = NO;
-    if ((nbytes =(int)recvfrom(udpSocket, buf_, 200, 0, (struct sockaddr*)&servaddr, (socklen_t *)&size)) < 0)
-    {
-        b480 = NO;
-    }
-    if(nbytes>=48)
-    {
-        int n1 = buf_[42]*0x100;
-        int n = buf_[41];
-        n+=n1;
-        if(n==480)
-            b480 = YES;
-    }
-    close(udpSocket);
-    return b480;
-}
+//-(BOOL)F_Getis480P
+//{
+//    usleep(5000);
+//    Byte cmd[2];
+//    cmd[0]=0x42;
+//    cmd[1]=0x02;
+//    int udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//
+//    struct sockaddr_in addr4;
+//    bzero(&addr4, sizeof(addr4));
+//    addr4.sin_len = sizeof(addr4);
+//    addr4.sin_family = AF_INET;
+//    addr4.sin_port = htons(30864);
+//    addr4.sin_addr.s_addr = inet_addr([self.sSerVerIP UTF8String]);
+//    socklen_t add_len = sizeof(struct sockaddr_in);
+//    sendto(udpSocket, cmd, 2, 0, (struct sockaddr *)&addr4, add_len);
+//
+//    int nbytes;
+//    int size;
+//    Byte buf_[200];
+//    struct sockaddr_in servaddr; /* the server's full addr */
+//    bzero((char *)&servaddr, sizeof(servaddr));
+//    struct timeval tv;
+//    tv.tv_sec = 0;
+//    tv.tv_usec = 1000*210;
+//    setsockopt(udpSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+//    BOOL  b480 = NO;
+//    if ((nbytes =(int)recvfrom(udpSocket, buf_, 200, 0, (struct sockaddr*)&servaddr, (socklen_t *)&size)) < 0)
+//    {
+//        b480 = NO;
+//    }
+//    if(nbytes>=48)
+//    {
+//        int n1 = buf_[42]*0x100;
+//        int n = buf_[41];
+//        n+=n1;
+//        if(n==480)
+//            b480 = YES;
+//    }
+//    close(udpSocket);
+//    return b480;
+//}
 
 
 -(void)F_GP_InitA
@@ -2205,7 +2254,9 @@ static   int   interrupt_cb( void   *para)
 
 -(BOOL)naInit:(NSString *)sPath
 {
-    _bSetRecordWH = NO;
+    //_bSetRecordWH = NO;
+    _nDispWidth = 1;
+    _nDispHeight = 1;
     return [self naInit_:sPath];
 }
 
@@ -3592,6 +3643,7 @@ static   int   interrupt_cb( void   *para)
         {
             av_frame_free(&m_decodedFrame);
             m_decodedFrame = NULL;
+            
         }
         
         
@@ -3600,27 +3652,16 @@ static   int   interrupt_cb( void   *para)
             sws_freeContext(img_convert_ctx);
             img_convert_ctx = NULL;
         }
-//        if(img_convert_ctxBmp!=NULL)
-//        {
-//            sws_freeContext(img_convert_ctxBmp);
-//            img_convert_ctxBmp = NULL;
-//        }
-        /*
-         if(img_convert_ctx_half!=NULL)
-         {
-         sws_freeContext(img_convert_ctx_half);
-         img_convert_ctx_half = NULL;
-         }
-         */
-        
-        
-        /*
-         if(img_convert_ctx_Rec!=NULL)
-         {
-         sws_freeContext(img_convert_ctx_Rec);
-         img_convert_ctx_Rec = NULL;
-         }
-         */
+
+        if(_nCameraDataRota !=0)
+        {
+            if(pFrameYUV_Real!=NULL && pFrameYUV_Real!=pFrameYUV)
+            {
+                av_freep(&pFrameYUV_Real->data[0]);
+                av_frame_free(&pFrameYUV_Real);
+                pFrameYUV_Real = NULL;
+            }
+        }
         
         if(pFrameYUV!=NULL)
         {
@@ -3665,7 +3706,6 @@ static   int   interrupt_cb( void   *para)
 
 -(void)frame_link2frame:(AVFrame *)src DES:(AVFrame*)des
 {
-    
     
     int i= 0;
     int hw = src->width>>1;
@@ -3788,8 +3828,119 @@ static   int   interrupt_cb( void   *para)
  des->key_frame = src->key_frame;
  }
  */
+
+
+
 -(UIImage *)YUVtoUIImage:(AVFrame *)myframe1 SAVE:(BOOL)bsave{
+#if 1
     
+    int width = myframe1->width;
+    int  height = myframe1->height;
+    int w= width;
+    int h= height;
+    size_t bitsPerComponent = 8; // 32/4 (4: R G BA)
+    size_t bytesPerRow = 4 * width;
+    unsigned char *imageBytes = malloc(bytesPerRow * height);
+    memset(imageBytes, 0, bytesPerRow * height);
+    I420ToABGR(myframe1->data[0], myframe1->linesize[0],
+               myframe1->data[1], myframe1->linesize[1],
+               myframe1->data[2], myframe1->linesize[2],
+               imageBytes,width*4,
+               width,height);
+    
+    if(bsave && self.dispView && self.dispView.nDispStyle !=0)
+    {
+        uint8 *pbuffer = (uint8 *)imageBytes;
+        RGBA_STRUCT df = {0,0,0,0};
+        int nDispStyle = self.dispView.nDispStyle;
+        {
+            int r,g,b;
+            if (nDispStyle == 2) {
+                df.r = 255;
+                df.g = 0;
+                df.b = 0;
+                df.a = 20; //= {255, 0, 0, 20};
+            } else if (nDispStyle == 3) {
+                df.r = 255;
+                df.g = 255;
+                df.b = 0;
+                df.a = 20; // {255, 255, 0, 20};
+            } else if (nDispStyle == 4) {
+                df.r = 0;
+                df.g = 255;
+                df.b = 0;
+                df.a = 20; // {0, 255, 0, 20};
+            } else if (nDispStyle == 5) {
+                df.r = 128;
+                df.g = 69;
+                df.b = 9;
+                df.a = 50; // {128, 69, 9, 50};
+            }
+            else if (nDispStyle == 6) {
+                df.r = 0;
+                df.g = 0;
+                df.b = 255;
+                df.a = 20; //{0, 0, 255, 20};
+            }
+            
+            RGBA_STRUCT *buffer;
+            uint8 dat =0;
+            float ap = df.a/100.0f;
+            for(int y=0;y<h;y++)
+            {
+                for(int x=0;x<w;x++)
+                {
+                    buffer =(RGBA_STRUCT *)pbuffer;
+                    if(nDispStyle==1)
+                    {
+                        dat =(uint8) (((*buffer).r*38 + (*buffer).g*75 + (*buffer).b*15) >> 7);
+                        (*buffer).r = dat;
+                        (*buffer).g = dat;
+                        (*buffer).b = dat;
+                    }
+                    else {
+                        
+                        r = (int) (ap * df.r + (1 - ap) * (*buffer).r);
+                        g = (int) (ap * df.g + (1 - ap) * (*buffer).g);
+                        b = (int) (ap * df.b + (1 - ap) * (*buffer).b);
+                        
+                        if(r>255)
+                            r = 255;
+                        if(r<0)
+                            r=0;
+                        if(g>255)
+                            g = 255;
+                        if(g<0)
+                            g=0;
+                        if(b>255)
+                            b = 255;
+                        if(b<0)
+                            b=0;
+                        (*buffer).r = (uint8)r;
+                        (*buffer).g = (uint8)g;
+                        (*buffer).b = (uint8)b;
+                    }
+                    pbuffer+=4;
+                }
+            }
+        }
+    }
+    
+    CGColorSpaceRef colorSpaceRef = CGColorSpaceCreateDeviceRGB();
+    CGContextRef contextRef = CGBitmapContextCreate(imageBytes,
+                                                    width,
+                                                    height,
+                                                    bitsPerComponent,
+                                                    bytesPerRow,
+                                                    colorSpaceRef,kCGImageAlphaPremultipliedLast);
+    CGImageRef imageRef = CGBitmapContextCreateImage(contextRef);
+    UIImage *image = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    CGContextRelease(contextRef);
+    CGColorSpaceRelease(colorSpaceRef);
+    free(imageBytes);
+    return image;
+#else
     int w = myframe1->width;
     int h = myframe1->height;
     AVFrame *myframe = av_frame_alloc();
@@ -3889,7 +4040,7 @@ static   int   interrupt_cb( void   *para)
         }
         free(pbufferA);
     }
-    
+
     I420ToNV12(myframe1->data[0], myframe1->linesize[0],
                myframe1->data[1], myframe1->linesize[1],
                myframe1->data[2], myframe1->linesize[2],
@@ -3934,18 +4085,28 @@ static   int   interrupt_cb( void   *para)
         myframe = NULL;
     }
     return Mynnnimage;
+#endif
 }
 
 
 -(int )GetBmp:(AVFrame *)frame bSave:(BOOL)bSave
 {
+    int ww =_nRecordWidth;
+    int hh =_nRecordHeight;
+    
+    if(_bPhotoSet)
+    {
+        ww = _nPhotoW;
+        hh = _nPhotoH;
+    }
+    
     AVFrame *tmpFrame1 = av_frame_alloc();
-    tmpFrame1->width=_nRecordWidth;
-    tmpFrame1->height=_nRecordHeight;
-    av_image_alloc(tmpFrame1->data, tmpFrame1->linesize, _nRecordWidth,
-                   _nRecordHeight,
+    tmpFrame1->width=ww;
+    tmpFrame1->height=hh;
+    av_image_alloc(tmpFrame1->data, tmpFrame1->linesize, ww,
+                   hh,
                    AV_PIX_FMT_YUV420P,4);
-    if(frame->width == _nRecordWidth && frame->height == _nRecordHeight)
+    if(frame->width == ww && frame->height == hh)
     {
         I420Copy(frame->data[0], frame->linesize[0],
                  frame->data[1], frame->linesize[1],
@@ -3953,7 +4114,7 @@ static   int   interrupt_cb( void   *para)
                  tmpFrame1->data[0], tmpFrame1->linesize[0],
                  tmpFrame1->data[1], tmpFrame1->linesize[1],
                  tmpFrame1->data[2], tmpFrame1->linesize[2],
-                 _nRecordWidth, _nRecordHeight);
+                 ww, hh);
     }
     else
     {
@@ -3964,7 +4125,7 @@ static   int   interrupt_cb( void   *para)
                   tmpFrame1->data[0], tmpFrame1->linesize[0],
                   tmpFrame1->data[1], tmpFrame1->linesize[1],
                   tmpFrame1->data[2], tmpFrame1->linesize[2],
-                  _nRecordWidth,_nRecordHeight,
+                  ww,hh,
                   kFilterBox);
     }
     {
@@ -4059,6 +4220,16 @@ static   int   interrupt_cb( void   *para)
 
 -(int)naGetFps
 {
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+//    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+
+    
     return _nDispFps;
 }
 -(int)PlatformDisplay:(AVFrame *)frame
@@ -4092,6 +4263,24 @@ static   int   interrupt_cb( void   *para)
     if([self.delegate respondsToSelector:@selector(ReceiveImg:)])
     {
         @autoreleasepool {
+            if(_bTransferSize)
+            {
+                if(frame->width!=_nTransferWidth || frame->height!=_nTransferHeight)
+                {
+                        I420Scale(frame->data[0], frame->linesize[0],
+                                  frame->data[1], frame->linesize[1],
+                                  frame->data[2], frame->linesize[2],
+                                  frame->width,frame->height,
+                                  _Frame_Trans->data[0], _Frame_Trans->linesize[0],
+                                  _Frame_Trans->data[1], _Frame_Trans->linesize[1],
+                                  _Frame_Trans->data[2], _Frame_Trans->linesize[2],
+                                  _nTransferWidth,_nTransferHeight,
+                                  kFilterBox);
+                        [self.delegate ReceiveImg: [self YUVtoUIImage:_Frame_Trans SAVE:NO]];
+                        return 0;
+
+                }
+            }
             [self.delegate ReceiveImg: [self YUVtoUIImage:frame SAVE:NO]];
         }
         return 0;
@@ -7577,6 +7766,9 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                      mFrame->pFrame->width, mFrame->pFrame->height);
         }
         
+        
+
+        
         @synchronized(videoFrames)
         {
             if(videoFrames.count>=5)
@@ -7802,7 +7994,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             else if(video_info->fps<10)
             {
                 video_info->fps = 10;
-                
             }
             nFps = video_info->fps;
             memcpy(&video_info_A,video_info,sizeof(T_NET_VIDEO_INFO));
@@ -8821,16 +9012,16 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             return;
     }
     
-    if(pFrameYUV!=NULL)     //f如果在播放过程中，摄像头改变了分辨率。就在这里重新设定
+    if(pFrameYUV_Real!=NULL)     //f如果在播放过程中，摄像头改变了分辨率。就在这里重新设定
     {
-        if(pFrameYUV->width != m_codecCtx->coded_width || pFrameYUV->height != m_codecCtx->coded_height)
+        if(pFrameYUV_Real->width != m_codecCtx->coded_width || pFrameYUV_Real->height != m_codecCtx->coded_height)
         {
             NSLog(@"Resolution changed width = %d height =  %d",m_codecCtx->coded_width,m_codecCtx->coded_height);
-            if(pFrameYUV!=NULL)
+            if(pFrameYUV_Real!=NULL)
             {
-                av_freep(&(pFrameYUV->data[0]));
-                av_frame_free(&pFrameYUV);
-                pFrameYUV = NULL;
+                av_freep(&(pFrameYUV_Real->data[0]));
+                av_frame_free(&pFrameYUV_Real);
+                pFrameYUV_Real = NULL;
             }
             if(frame_a!=NULL)
             {
@@ -8954,6 +9145,12 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     _nRecordWidth = w;
     _nRecordHeight = h;
     
+}
+-(void)naSetSnapPhoto:(int)w Height:(int)h SET:(BOOL)b
+{
+    _nPhotoW = w;
+    _nPhotoH = h;
+    _bPhotoSet = b;
 }
 
 -(int)InitMediaGKA
@@ -9101,6 +9298,100 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 #pragma mark  解码
 //解码自定义协议传输H264
 
+-(int)F_YUV_Round:(AVFrame *)myframe1
+{
+    int w = myframe1->width;
+    int h = myframe1->height;
+    int W1 = w;
+    int H1 = h;
+//    if(_frame_scanl!=NULL)
+//    {
+//        if(_frame_scanl->width<w+100)
+//        {
+//            av_freep(&_frame_scanl->data[0]);
+//            av_frame_free(&_frame_scanl);
+//            _frame_scanl = NULL;
+//        }
+//    }
+//    if(_frame_scanl==NULL)
+//    {
+//        _frame_scanl = av_frame_alloc();
+//        _frame_scanl->width=W1;
+//        _frame_scanl->height=H1;
+//        av_image_alloc(_frame_scanl->data, _frame_scanl->linesize, W1,
+//                       H1,
+//                       AV_PIX_FMT_YUV420P,4);
+//    }
+//    I420Scale(myframe1->data[0], myframe1->linesize[0],
+//              myframe1->data[1], myframe1->linesize[1],
+//              myframe1->data[2], myframe1->linesize[2],
+//              myframe1->width, myframe1->height,
+//              _frame_scanl->data[0], _frame_scanl->linesize[0],
+//              _frame_scanl->data[1], _frame_scanl->linesize[1],
+//              _frame_scanl->data[2], _frame_scanl->linesize[2],
+//              _frame_scanl->width, _frame_scanl->height, kFilterBox);
+
+    uint8 *pbufferA =(uint8 *) malloc(W1*4*H1);
+    uint8 *pbuffer = pbufferA;
+    memset(pbuffer,0,W1*4*H1);
+    I420ToABGR(myframe1->data[0], myframe1->linesize[0],
+               myframe1->data[1], myframe1->linesize[1],
+               myframe1->data[2], myframe1->linesize[2],
+               pbuffer,W1*4,
+               W1,H1);
+    int x2 = W1/2;
+    int y2 = H1/2;
+    int r = x2<=y2?x2:y2;
+    int RR0 = r-4;
+    int32_t RR = RR0*RR0;
+    int32_t xa,ya;
+    int32 *pData;
+    int nLine = W1*4;
+    int YYY=0;
+    for(int y=0;y<h;y++)
+    {
+        YYY = y*nLine;
+        for(int x=0;x<w;x++)
+        {
+            xa =(x-x2)*(x-x2);  //x*x - X2*x-X2*x+x2*x2
+            ya =(y-y2)*(y-y2);
+            if(xa+ya>=RR)
+            {
+                pData = (int32 *)(pbufferA+(YYY+x*4));
+                *(pData)=0;
+            }
+        }
+    }
+
+    ABGRToI420((uint8_t *) pbuffer, myframe1->width * 4,
+               myframe1->data[0], myframe1->linesize[0],
+               myframe1->data[1], myframe1->linesize[1],
+               myframe1->data[2], myframe1->linesize[2],
+               myframe1->width, myframe1->height);
+
+    
+    
+//    ABGRToI420((uint8_t *) pbuffer, _frame_scanl->width * 4,
+//               _frame_scanl->data[0], _frame_scanl->linesize[0],
+//               _frame_scanl->data[1], _frame_scanl->linesize[1],
+//               _frame_scanl->data[2], _frame_scanl->linesize[2],
+//               _frame_scanl->width, _frame_scanl->height);
+//
+//
+//    I420Scale(_frame_scanl->data[0], _frame_scanl->linesize[0],
+//              _frame_scanl->data[1], _frame_scanl->linesize[1],
+//              _frame_scanl->data[2], _frame_scanl->linesize[2],
+//              _frame_scanl->width, _frame_scanl->height,
+//              myframe1->data[0], myframe1->linesize[0],
+//              myframe1->data[1], myframe1->linesize[1],
+//              myframe1->data[2], myframe1->linesize[2],
+//              myframe1->width, myframe1->height, kFilterBox);
+    
+    free(pbufferA);
+    
+    return 0;
+}
+
 -(void)F_H264Decord:(int)ret TYPE:(int)nType
 {
     int nKeyFrame = 0;
@@ -9109,13 +9400,13 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         [self.packetLock lock];
         self.nRelinkTime = 0;
         [self.packetLock unlock];
-        _nDispWidth = m_codecCtx->coded_width;
-        _nDispHeight = m_codecCtx->coded_height;
-        if(!_bSetRecordWH)
-        {
-            _nRecordWidth = _nDispWidth;
-            _nRecordHeight = _nDispHeight;
-        }
+//        _nDispWidth = m_codecCtx->coded_width;
+//        _nDispHeight = m_codecCtx->coded_height;
+//        if(!_bSetRecordWH)
+//        {
+//            _nRecordWidth = _nDispWidth;
+//            _nRecordHeight = _nDispHeight;
+//        }
         nKeyFrame = m_decodedFrame->key_frame;
         if(nType == 0)
         {
@@ -9130,6 +9421,25 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
         {
             [self InitMediaSN:self.b480];
         }
+        if(pFrameYUV_Real!=NULL)
+        {
+            if(pFrameYUV_Real->width !=m_codecCtx->width || pFrameYUV_Real->height !=m_codecCtx->height)
+            {
+                av_freep(&pFrameYUV_Real->data[0]);
+                av_frame_free(&pFrameYUV_Real);
+                pFrameYUV_Real = NULL;
+            }
+        }
+        
+        if(pFrameYUV_Real == NULL)
+        {
+            pFrameYUV_Real = av_frame_alloc();
+            pFrameYUV_Real->width =m_codecCtx->width;
+            pFrameYUV_Real->height =m_codecCtx->height;
+            av_image_alloc(pFrameYUV_Real->data, pFrameYUV_Real->linesize, pFrameYUV_Real->width,
+                           pFrameYUV_Real->height,AV_PIX_FMT_YUV420P,4);
+        }
+        
         
         
         if(m_codecCtx->pix_fmt==AV_PIX_FMT_YUV420P || m_codecCtx->pix_fmt==AV_PIX_FMT_YUVJ420P)
@@ -9137,30 +9447,100 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             I420Copy(m_decodedFrame->data[0], m_decodedFrame->linesize[0],
                      m_decodedFrame->data[1], m_decodedFrame->linesize[1],
                      m_decodedFrame->data[2], m_decodedFrame->linesize[2],
-                     pFrameYUV->data[0], frame_a->linesize[0],
-                     pFrameYUV->data[1], frame_a->linesize[1],
-                     pFrameYUV->data[2], frame_a->linesize[2],
+                     pFrameYUV_Real->data[0], pFrameYUV_Real->linesize[0],
+                     pFrameYUV_Real->data[1], pFrameYUV_Real->linesize[1],
+                     pFrameYUV_Real->data[2], pFrameYUV_Real->linesize[2],
                      m_decodedFrame->width, m_decodedFrame->height);
         }
         else
         {
-#if 0
-            sws_scale(img_convert_ctx,
-                      (const uint8_t *const *) m_decodedFrame->data,
-                      m_decodedFrame->linesize, 0,
-                      m_codecCtx->coded_height,
-                      pFrameYUV->data, pFrameYUV->linesize);
-            
-#else
             I422ToI420(m_decodedFrame->data[0], m_decodedFrame->linesize[0],
                        m_decodedFrame->data[1], m_decodedFrame->linesize[1],
                        m_decodedFrame->data[2], m_decodedFrame->linesize[2],
-                       pFrameYUV->data[0], pFrameYUV->linesize[0],
-                       pFrameYUV->data[1], pFrameYUV->linesize[1],
-                       pFrameYUV->data[2], pFrameYUV->linesize[2],
+                       pFrameYUV_Real->data[0], pFrameYUV_Real->linesize[0],
+                       pFrameYUV_Real->data[1], pFrameYUV_Real->linesize[1],
+                       pFrameYUV_Real->data[2], pFrameYUV_Real->linesize[2],
                        m_decodedFrame->width, m_decodedFrame->height
                        );
-#endif
+        }
+        
+        int www1 = pFrameYUV_Real->width;
+        int hhh1 = pFrameYUV_Real->height;
+        if(_nCameraDataRota == 90 || _nCameraDataRota == 270)
+        {
+            www1 = pFrameYUV_Real->height;
+            hhh1 = pFrameYUV_Real->width;
+        }
+        
+        _nDispWidth = www1;
+        _nDispHeight = hhh1;
+        if(!_bSetRecordWH)
+        {
+            _nRecordWidth = _nDispWidth;
+            _nRecordHeight = _nDispHeight;
+        }
+        
+        if(_nCameraDataRota!=0)
+        {
+            if (pFrameYUV != NULL)
+            {
+                if (pFrameYUV->width != www1 || pFrameYUV->height != hhh1) {
+                    av_freep(&pFrameYUV->data[0]);
+                    av_frame_free(&pFrameYUV);
+                    pFrameYUV = NULL;
+                }
+            }
+            
+            if (pFrameYUV == NULL)
+            {
+                pFrameYUV = av_frame_alloc();
+                pFrameYUV->format = AV_PIX_FMT_YUV420P;
+                pFrameYUV->width = www1;
+                pFrameYUV->height = hhh1;
+                av_image_alloc(
+                               pFrameYUV->data, pFrameYUV->linesize, pFrameYUV->width,
+                               pFrameYUV->height,
+                               AV_PIX_FMT_YUV420P, 4);
+            }
+            
+            
+            int rot =  kRotate0;
+            if(_nCameraDataRota == 90 )
+            {
+                rot = kRotate90;
+            }
+            if(_nCameraDataRota == 180 )
+            {
+                rot = kRotate180;
+            }
+            if(_nCameraDataRota == 270 )
+            {
+                rot = kRotate270;
+            }
+            
+            I420Rotate(pFrameYUV_Real->data[0], pFrameYUV_Real->linesize[0],
+                               pFrameYUV_Real->data[1], pFrameYUV_Real->linesize[1],
+                               pFrameYUV_Real->data[2], pFrameYUV_Real->linesize[2],
+                               pFrameYUV->data[0], pFrameYUV->linesize[0],
+                               pFrameYUV->data[1], pFrameYUV->linesize[1],
+                               pFrameYUV->data[2], pFrameYUV->linesize[2],
+                               pFrameYUV_Real->width, pFrameYUV_Real->height,
+                               rot);
+            
+        }
+        else
+        {
+            if (pFrameYUV != NULL && pFrameYUV!=pFrameYUV_Real)
+            {
+                av_freep(&pFrameYUV->data[0]);
+                av_frame_free(&pFrameYUV);
+            }
+            pFrameYUV =pFrameYUV_Real;
+        }
+        
+        if(_bTransRound)
+        {
+            [self F_YUV_Round:pFrameYUV];    //截取圆形
         }
 
         if(_bMirror)
@@ -9256,55 +9636,53 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                 _my_snapframe->pFrame = pFrameSnap;
             }
             
-            int cx =  pFrameYUV_D->width/2;
-            int cy =  pFrameYUV_D->height/2;
+            int cx = pFrameYUV_D->width / 2;
+            int cy = pFrameYUV_D->height / 2;
             
-            int lx = cx-(pFrameYUV->width/2);
-            lx=(lx+1)/2;
-            lx*=2;
+            int lx = cx - (pFrameYUV->width / 2);
+            lx = (lx + 1) / 2;
+            lx *= 2;
             
-            
-            int ly = cy-(pFrameYUV->height/2);
-            ly = (ly+1)/2;
-            ly*=2;
-            
-            Byte *psrc;
-            Byte *pdes;
-            
-            Byte *pSrcStart = pFrameYUV_D->data[0]+ly*pFrameYUV_D->linesize[0]+lx;
-            pdes =(Byte*) pFrameYUV->data[0];
-            
-            for(int yy=0;yy<pFrameYUV->height;yy++)
-            {
-                psrc =(Byte*)pSrcStart+yy*pFrameYUV_D->linesize[0];
-                memcpy(pdes+yy*pFrameYUV->linesize[0],psrc,(size_t)(pFrameYUV->linesize[0]));
-            }
+            int ly = cy - (pFrameYUV->height / 2);
+            ly = (ly + 1) / 2;
+            ly *= 2;
             
             
-            pSrcStart = pFrameYUV_D->data[1]+ly/2*pFrameYUV_D->linesize[1]+lx/2;
-            pdes = pFrameYUV->data[1];
-            
-            for(int yy=0;yy<pFrameYUV->height/2;yy++)
-            {
-                psrc = pSrcStart+yy*pFrameYUV_D->linesize[1];
-                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[1]);
-                
-            }
-            
-            pSrcStart = pFrameYUV_D->data[2]+ly/2*pFrameYUV_D->linesize[2]+lx/2;
-            pdes = pFrameYUV->data[2];
-            
-            for(int yy=0;yy<pFrameYUV->height/2;yy++)
-            {
-                psrc = pSrcStart+yy*pFrameYUV_D->linesize[2];
-                memcpy(pdes+yy*pFrameYUV->linesize[1],psrc,(size_t )pFrameYUV->linesize[2]);
-            }
+            //int length = (pFrameYUV_D->height*pFrameYUV_D->height*3)/2;
+            int length = (pFrameYUV_D->width*pFrameYUV_D->height*3)/2;
+            int nSize = pFrameYUV->width;
+            ConvertToI420(pFrameYUV_D->data[0],length,
+                                  pFrameYUV->data[0], nSize,
+                                  pFrameYUV->data[1], nSize>>1,
+                                  pFrameYUV->data[2], nSize>>1,
+                                  lx,ly,
+                                  pFrameYUV_D->width,pFrameYUV_D->height,
+                                  pFrameYUV->width,pFrameYUV->height,
+                                  kRotate0, FOURCC_I420);
             av_freep(&(pFrameYUV_D->data[0]));
             av_frame_free(&pFrameYUV_D);
         }
         
         if(self.bFlip)
         {
+            if (frame_a != NULL) {
+                if(frame_a->width!=pFrameYUV->width || frame_a->height!=pFrameYUV->height) {
+                    av_freep(&frame_a->data[0]);
+                    av_frame_free(&frame_a);
+                    frame_a = NULL;
+                }
+            }
+            
+            if (frame_a == NULL) {
+                frame_a = av_frame_alloc();
+                frame_a->format = AV_PIX_FMT_YUV420P;
+                frame_a->width = pFrameYUV->width;
+                frame_a->height = pFrameYUV->height;
+                av_image_alloc(frame_a->data, frame_a->linesize, pFrameYUV->width,
+                               pFrameYUV->height,
+                               AV_PIX_FMT_YUV420P, 4);
+            }
+            
             
             I420Rotate(pFrameYUV->data[0], pFrameYUV->linesize[0],
                        pFrameYUV->data[1], pFrameYUV->linesize[1],
@@ -9312,7 +9690,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                        frame_a->data[0], frame_a->linesize[0],
                        frame_a->data[1], frame_a->linesize[1],
                        frame_a->data[2], frame_a->linesize[2],
-                       frame_a->width, frame_a->height,kRotate180);
+                       pFrameYUV->width, pFrameYUV->height,kRotate180);
             
             
             I420Copy(frame_a->data[0], frame_a->linesize[0],
@@ -9321,11 +9699,31 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                      pFrameYUV->data[0], frame_a->linesize[0],
                      pFrameYUV->data[1], frame_a->linesize[1],
                      pFrameYUV->data[2], frame_a->linesize[2],
-                     frame_a->width, frame_a->height);
+                     pFrameYUV->width, pFrameYUV->height);
         }
-#if 1
+
         if(self.b3D)
         {
+            
+            if (frame_b != NULL) {
+                if(frame_b->width!=pFrameYUV->width/2 || frame_b->height!=pFrameYUV->height/2) {
+                    av_freep(&frame_a->data[0]);
+                    av_frame_free(&frame_a);
+                    frame_a = NULL;
+                }
+            }
+            
+            if (frame_b == NULL) {
+                frame_b = av_frame_alloc();
+                frame_b->format = AV_PIX_FMT_YUV420P;
+                frame_b->width = pFrameYUV->width/2;
+                frame_b->height = pFrameYUV->height/2;
+                av_image_alloc(frame_b->data, frame_b->linesize, pFrameYUV->width/2,
+                               pFrameYUV->height/2,
+                               AV_PIX_FMT_YUV420P, 4);
+            }
+
+            
             I420Scale(pFrameYUV->data[0], pFrameYUV->linesize[0],
                       pFrameYUV->data[1], pFrameYUV->linesize[1],
                       pFrameYUV->data[2], pFrameYUV->linesize[2],
@@ -9336,11 +9734,27 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                       frame_b->width, frame_b->height, kFilterBilinear);
             [self frame_link2frame:frame_b DES:pFrameYUV];;
         }
-#endif
+
         [self SaveVideo];
         pFrameYUV->key_frame= nKeyFrame;
+        
         if(pFrameSnap!=NULL)
         {
+            if(pFrameSnap->width!=pFrameYUV->width || pFrameSnap->height!=pFrameYUV->height) {
+                av_freep(&pFrameSnap->data[0]);
+                av_frame_free(&pFrameSnap);
+                pFrameSnap = NULL;
+
+                pFrameSnap = av_frame_alloc();
+                pFrameSnap->format = AV_PIX_FMT_YUV420P;
+                pFrameSnap->width = pFrameYUV->width;
+                pFrameSnap->height = pFrameYUV->height;
+                av_image_alloc(pFrameSnap->data, pFrameSnap->linesize, pFrameYUV->width,
+                               pFrameYUV->height,
+                               AV_PIX_FMT_YUV420P, 4);
+                
+            }
+            
             @synchronized(_my_snapframe)
             {
                 I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
@@ -9352,48 +9766,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                          pFrameYUV->width, pFrameYUV->height);
             }
         }
-        
-        
-#if 0
-        MyFrame *mFrame = [[MyFrame alloc] init];
-        mFrame->pFrame = av_frame_alloc();
-        mFrame->pFrame->width=_nDispWidth;
-        mFrame->pFrame->height=_nDispHeight;
-        av_image_alloc(
-                       mFrame->pFrame->data, mFrame->pFrame->linesize, _nDispWidth,
-                       _nDispHeight,
-                       AV_PIX_FMT_YUV420P, 4);
-        {
-            I420Copy(pFrameYUV->data[0], pFrameYUV->linesize[0],
-                     pFrameYUV->data[1], pFrameYUV->linesize[1],
-                     pFrameYUV->data[2], pFrameYUV->linesize[2],
-                     mFrame->pFrame->data[0], mFrame->pFrame->linesize[0],
-                     mFrame->pFrame->data[1], mFrame->pFrame->linesize[1],
-                     mFrame->pFrame->data[2], mFrame->pFrame->linesize[2],
-                     mFrame->pFrame->width, mFrame->pFrame->height);
-        }
-        
-        MyFrame *tempFrame  = NULL;
-        @synchronized(videoFrames_A)
-        {
-            if(videoFrames_A.count>=10)
-            {
-                tempFrame = videoFrames_A[0];
-                //[self PlatformDisplay:tempFrame->pFrame];
-                [videoFrames_A removeObjectAtIndex:0];
-                if(tempFrame !=NULL)
-                {
-                    //[self PlatformDisplay:tempFrame->pFrame];
-                    av_freep(&(tempFrame->pFrame->data[0]));
-                    av_frame_free(&(tempFrame->pFrame));
-                }
-            }
-            [videoFrames_A addObject:mFrame];
-            _nDelayTime = 0;
-        }
-#else
         [self PlatformDisplay:pFrameYUV];
-#endif
     }
 }
 
@@ -9836,7 +10209,12 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             }
             
             ssize_t nbytes = recvfrom(weakself.socket_udp20000, readBuff,2000, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
-            if(nbytes>0)
+            char *sip = inet_ntoa(servaddr.sin_addr);
+            NSString *ssip =@"";
+            if(sip!=NULL)
+                ssip = [NSString stringWithUTF8String:sip];
+            
+            if(nbytes>0 && ![ssip isEqualToString:@"127.0.0.1"])
             {
                 NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];
                 if(self.nIC_Type == IC_GKA)
@@ -10139,6 +10517,22 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
                         }
                     }
                 }
+                else if(readBuff[5]==0x10 &&readBuff[6]==0x21)   //读取 电量值
+                {
+                    if([self.delegate respondsToSelector:@selector(GetBatteryLevel:)])
+                    {
+                        int df =(int)readBuff[7];
+                        [self.delegate GetBatteryLevel:df];
+                    }
+                }
+                else
+                {
+                    if([self.delegate respondsToSelector:@selector(GetDataFromWifi:)])
+                    {
+                        NSData *dat = [NSData dataWithBytes:readBuff+5 length:data.length-5];
+                        [self.delegate GetDataFromWifi:dat];
+                    }
+                }
             }
         }
     }
@@ -10386,7 +10780,6 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
             ssize_t nbytes = recvfrom(weakself.socket_udp, readBuff,1400, 0,(struct sockaddr *) &servaddr, (socklen_t *) &size);
             if(nbytes>0)
             {
-                
                 @autoreleasepool {
                     NSData *data = [[NSData alloc] initWithBytes:readBuff length:nbytes];
                     if([weakself.delegate respondsToSelector:@selector(GetUdpData:)])
@@ -10506,6 +10899,7 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
 -(void)naGetModelInfo
 {
     [self F_GetDeviceType];
+    
     [self F_StratListenat20000];
     
     uint8_t msg[20];
@@ -10540,6 +10934,47 @@ void encodeOutputCallback(void *userData, void *sourceFrameRefCon, OSStatus stat
     usleep(1000 * 20);
     
     
+}
+
+-(void)naSetTransferSize:(int)nWidth Height:(int)nHeight  ROUND:(BOOL)b
+{
+    _nTransferWidth = nWidth;
+    _nTransferHeight = nHeight;
+    _bTransRound = b;
+    _bTransferSize = YES;
+    if(_Frame_Trans != NULL)
+    {
+        av_freep(&_Frame_Trans->data[0]);
+        av_frame_free(&_Frame_Trans);
+        _Frame_Trans = NULL;
+    }
+    _Frame_Trans = av_frame_alloc();
+    _Frame_Trans->width=_nTransferWidth;
+    _Frame_Trans->height=_nTransferHeight;
+    av_image_alloc(_Frame_Trans->data, _Frame_Trans->linesize, _nTransferWidth,
+                   _nTransferHeight,
+                   AV_PIX_FMT_YUV420P,4);
+    
+    
+}
+-(int32_t)naGetDispWH
+{
+    int32_t wh=0;
+    int w = _nDispWidth;
+    int h = _nDispHeight;
+    wh = w*0x10000+(h&0xFFFF);
+    return wh;
+}
+
+-(void)naSetCameraDataRota:(int)n
+{
+    if(n==0 || n == 90 || n==180 ||n==270)
+    {
+        _nCameraDataRota = n;
+    } else
+    {
+        _nCameraDataRota = 0;
+    }
 }
 
 

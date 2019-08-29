@@ -51,12 +51,6 @@
                                                                 failure:(ALAssetsLibraryAccessFailureBlock)failure
 {
     return ^(NSURL *assetURL, NSError *error) {
-        // Run the completion block for writing image to saved
-        //   photos album
-        //if (completion) completion(assetURL, error);
-        
-        // If an error occured, do not try to add the asset to
-        //   the custom photo album
         if (error != nil) {
             if (failure) failure(error);
             return;

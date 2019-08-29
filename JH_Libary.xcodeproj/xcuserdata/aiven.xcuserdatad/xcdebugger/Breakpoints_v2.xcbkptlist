@@ -9,22 +9,6 @@
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JH-Libary/ALAssetsLibrary+CustomPhotoAlbum.m"
-            timestampString = "557054380.912554"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "60"
-            endingLineNumber = "60"
-            landmarkName = "-_resultBlockOfAddingToAlbum:completion:failure:"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
             filePath = "JH-Libary/OpenGLView/JH_OpenGLView.m"
             timestampString = "562667343.577919"
             startingColumnNumber = "9223372036854775807"
@@ -47,7 +31,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "8680"
             endingLineNumber = "8680"
-            landmarkName = "-Connect_gk"
+            landmarkName = "-F_StartReadNotice"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -63,7 +47,39 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "8844"
             endingLineNumber = "8844"
-            landmarkName = "-F_InitFrame"
+            landmarkName = "-ConnectGPH264A"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "JH-Libary/JH_WifiCamera.m"
+            timestampString = "582112978.849208"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "9844"
+            endingLineNumber = "9844"
+            landmarkName = "-DecordData_H264:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "JH-Libary/JH_WifiCamera.m"
+            timestampString = "586759601.935402"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "9486"
+            endingLineNumber = "9486"
+            landmarkName = "-F_H264Decord:TYPE:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
